@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for react-big-calendar */
+.rbc-calendar {
+  font-family: inherit;
+}
+
+.rbc-header {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  color: #374151;
+  padding: 8px;
+}
+
+.rbc-time-view .rbc-time-gutter {
+  background-color: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+}
+
+.rbc-time-slot {
+  border-top: 1px solid #f1f5f9;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rbc-current-time-indicator {
+  background-color: #ef4444;
+  height: 2px;
+}
+
+.rbc-today {
+  background-color: #fef3c7;
+}
+
+.rbc-event {
+  border-radius: 4px;
+  border: none !important;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+.rbc-event:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.rbc-toolbar {
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.rbc-toolbar button {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin: 0 2px;
+  transition: all 0.2s;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #3b82f6;
+  border-color: #2563eb;
+  color: white;
+}
+
+.rbc-toolbar-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 16px;
+}
+
+/* Dark mode overrides for react-big-calendar */
+.dark .rbc-header {
+  background-color: #18181b;
+  border-bottom: 1px solid #27272a;
+  color: #e5e7eb;
+}
+.dark .rbc-time-view .rbc-time-gutter {
+  background-color: #18181b;
+  border-right: 1px solid #27272a;
+}
+.dark .rbc-time-slot {
+  border-top: 1px solid #27272a;
+}
+.dark .rbc-timeslot-group {
+  border-bottom: 1px solid #27272a;
+}
+.dark .rbc-today {
+  background-color: #334155;
+}
+.dark .rbc-event {
+  color: #f1f5f9;
+}
+.dark .rbc-toolbar {
+  background: transparent;
+}
+.dark .rbc-toolbar button {
+  background-color: #27272a;
+  border: 1px solid #3f3f46;
+  color: #e5e7eb;
+}
+.dark .rbc-toolbar button:hover {
+  background-color: #3f3f46;
+  border-color: #52525b;
+}
+.dark .rbc-toolbar button.rbc-active {
+  background-color: #7c3aed;
+  border-color: #a78bfa;
+  color: #fff;
+}
+.dark .rbc-toolbar-label {
+  color: #e5e7eb;
+}
