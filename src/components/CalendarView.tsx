@@ -726,7 +726,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           minHeight: '400px', // Minimum height
           maxHeight: '650px', // Maximum height
           borderRadius: '1rem',
-          overflow: 'hidden',
+          overflow: 'auto',
           background: 'rgba(255,255,255,0.95)',
           boxShadow: '0 4px 24px rgba(80,80,180,0.07)',
         }}
@@ -800,7 +800,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         @media (max-width: 640px) {
           .calendar-scroll-container {
             overflow-x: auto !important;
-            overflow-y: hidden !important;
+            overflow-y: visible !important;
             -webkit-overflow-scrolling: touch !important;
           }
           
@@ -829,8 +829,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           }
           
           .rbc-header {
-            font-size: 12px !important;
-            padding: 4px 2px !important;
+            font-size: 14px !important;
+            padding: 8px 4px !important;
+            font-weight: 500 !important;
+            line-height: 1.2 !important;
           }
           
           .rbc-toolbar {
@@ -896,6 +898,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           .rbc-time-header {
             display: flex !important;
             min-width: 800px !important;
+            height: auto !important;
           }
           
           .rbc-time-header-gutter {
@@ -905,6 +908,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             background: inherit !important;
             width: 60px !important;
             min-width: 60px !important;
+            height: auto !important;
           }
           
           .dark .rbc-time-header-gutter {
@@ -916,6 +920,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             flex: 1 !important;
             min-width: 0 !important;
             text-align: center !important;
+            padding: 8px 4px !important;
+            height: auto !important;
+            min-height: 40px !important;
           }
           
           .rbc-time-content .rbc-timeslot-group {
@@ -939,7 +946,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             width: 100% !important;
           }
           
-          .rbc-time-header-content > div,
+          .rbc-time-header-content > div {
+            flex: 1 !important;
+            min-width: 0 !important;
+            width: calc(100% / 7) !important; /* 7 days */
+            min-height: 40px !important;
+          }
+          
           .rbc-time-content > div {
             flex: 1 !important;
             min-width: 0 !important;
