@@ -891,6 +891,69 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           .dark .rbc-time-gutter {
             background: #18181b !important;
           }
+          
+          /* Fix header alignment with content */
+          .rbc-time-header {
+            display: flex !important;
+            min-width: 800px !important;
+          }
+          
+          .rbc-time-header-gutter {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 10 !important;
+            background: inherit !important;
+            width: 60px !important;
+            min-width: 60px !important;
+          }
+          
+          .dark .rbc-time-header-gutter {
+            background: #18181b !important;
+          }
+          
+          /* Ensure header and content columns align */
+          .rbc-time-header-content .rbc-header {
+            flex: 1 !important;
+            min-width: 0 !important;
+            text-align: center !important;
+          }
+          
+          .rbc-time-content .rbc-timeslot-group {
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          
+          /* Fix table layout for proper alignment */
+          .rbc-time-view .rbc-time-header {
+            table-layout: fixed !important;
+          }
+          
+          .rbc-time-view .rbc-time-content {
+            table-layout: fixed !important;
+          }
+          
+          /* Ensure perfect alignment between header and content */
+          .rbc-time-header-content,
+          .rbc-time-content {
+            display: flex !important;
+            width: 100% !important;
+          }
+          
+          .rbc-time-header-content > div,
+          .rbc-time-content > div {
+            flex: 1 !important;
+            min-width: 0 !important;
+            width: calc(100% / 7) !important; /* 7 days */
+          }
+          
+          /* Ensure gutter columns have consistent width */
+          .rbc-time-header-gutter,
+          .rbc-time-gutter {
+            width: 60px !important;
+            min-width: 60px !important;
+            max-width: 60px !important;
+            flex-shrink: 0 !important;
+          }
         }
         
         /* Better touch targets for mobile */
