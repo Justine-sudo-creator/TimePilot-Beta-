@@ -732,6 +732,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         }}
         className="calendar-grid-container dark:bg-gray-900 dark:bg-opacity-95"
       >
+        <div className="calendar-scroll-container">
+          <div className="calendar-content-wrapper">
         <Calendar
           localizer={localizer}
           events={events}
@@ -764,6 +766,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           rtl={false}
           dayLayoutAlgorithm="no-overlap"
         />
+          </div>
+        </div>
       </div>
       {/* Add custom CSS for thicker interval lines and better spacing */}
       <style>{`
@@ -794,6 +798,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         
         /* Mobile-specific improvements */
         @media (max-width: 640px) {
+          .calendar-scroll-container {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          
+          .calendar-content-wrapper {
+            min-width: 800px !important;
+            width: 100% !important;
+          }
+          
           .rbc-event {
             min-height: 20px !important;
             font-size: 11px !important;
@@ -854,6 +869,28 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         
         .dark .rbc-time-slot:not(:first-child) {
           border-top: 1px solid #374151 !important;
+        }
+        
+        /* Ensure proper column widths on mobile */
+        @media (max-width: 640px) {
+          .rbc-time-header-content {
+            min-width: 800px !important;
+          }
+          
+          .rbc-time-content {
+            min-width: 800px !important;
+          }
+          
+          .rbc-time-gutter {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 10 !important;
+            background: inherit !important;
+          }
+          
+          .dark .rbc-time-gutter {
+            background: #18181b !important;
+          }
         }
         
         /* Better touch targets for mobile */
