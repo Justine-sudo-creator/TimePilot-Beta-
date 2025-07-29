@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2 } from 'lucide-react';
+import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2, Menu, X } from 'lucide-react';
 import { Task, StudyPlan, UserSettings, FixedCommitment, StudySession, TimerState } from './types';
 import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback } from './utils/scheduling';
 
@@ -104,6 +104,7 @@ function App() {
     const [showInteractiveTutorial, setShowInteractiveTutorial] = useState(false);
     const [highlightedTab, setHighlightedTab] = useState<string | null>(null);
     const [highlightStudyPlanMode, setHighlightStudyPlanMode] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
     useEffect(() => {
@@ -1320,30 +1321,38 @@ function App() {
             <div className={`${darkMode ? 'dark' : ''}`}>
                 <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
                 {/* Navbar/Header */}
-                <header className="w-full flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-900 shadow-md z-40">
-                    <div className="text-2xl font-bold text-gray-800 dark:text-white">TimePilot</div>
-                    <button
-                        className={`ml-auto flex items-center rounded-full p-2 transition-colors z-50 ${hasUnscheduled ? 'bg-yellow-300 shadow-lg animate-bounce' : 'bg-gray-200'} ${hasUnscheduled ? 'text-yellow-700' : 'text-gray-400'} ${hasUnscheduled ? '' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
-                        title={showSuggestionsPanel ? 'Hide Optimization Suggestions' : 'Show Optimization Suggestions'}
-                        onClick={() => hasUnscheduled && setShowSuggestionsPanel(v => !v)}
-                        style={{ outline: 'none', border: 'none' }}
-                        disabled={!hasUnscheduled}
-                    >
-                        <Lightbulb className={`w-6 h-6`} fill={hasUnscheduled ? '#fde047' : 'none'} />
-                    </button>
+                <header className="w-full flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-gray-900 shadow-md z-40">
+                    <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">TimePilot</div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            className={`flex items-center rounded-full p-2 transition-colors z-50 ${hasUnscheduled ? 'bg-yellow-300 shadow-lg animate-bounce' : 'bg-gray-200'} ${hasUnscheduled ? 'text-yellow-700' : 'text-gray-400'} ${hasUnscheduled ? '' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
+                            title={showSuggestionsPanel ? 'Hide Optimization Suggestions' : 'Show Optimization Suggestions'}
+                            onClick={() => hasUnscheduled && setShowSuggestionsPanel(v => !v)}
+                            style={{ outline: 'none', border: 'none' }}
+                            disabled={!hasUnscheduled}
+                        >
+                            <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6`} fill={hasUnscheduled ? '#fde047' : 'none'} />
+                        </button>
+                        <button
+                            className="lg:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        >
+                            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        </button>
+                    </div>
                 </header>
 
                 {/* Navigation */}
                 <nav className="bg-white shadow-sm border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex space-x-8">
+                        {/* Desktop Navigation */}
+                        <div className="hidden lg:flex space-x-8">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => {
-                                        // Don't clear current task when switching away from timer tab
-                                        // This allows the timer to persist across tab switches
                                         setActiveTab(tab.id as typeof activeTab);
+                                        setMobileMenuOpen(false);
                                     }}
                                     className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors duration-200 border-b-2 ${
                                         activeTab === tab.id
@@ -1356,11 +1365,34 @@ function App() {
                                 </button>
                             ))}
                         </div>
+
+                        {/* Mobile Navigation */}
+                        <div className={`lg:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+                            <div className="py-2 space-y-1">
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            setActiveTab(tab.id as typeof activeTab);
+                                            setMobileMenuOpen(false);
+                                        }}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors duration-200 rounded-lg ${
+                                            activeTab === tab.id
+                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800'
+                                        } ${showInteractiveTutorial && highlightedTab === tab.id ? 'ring-2 ring-yellow-400 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`}
+                                    >
+                                        <tab.icon size={20} />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </nav>
 
                 {/* Main Content */}
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative">
                     {/* Toggle Suggestions Panel Button */}
                     {/* Suggestions Panel */}
                     {showSuggestionsPanel && hasUnscheduled && (
@@ -1374,11 +1406,11 @@ function App() {
                         />
                     )}
                     {notificationMessage && (
-                        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+                        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm sm:max-w-md lg:max-w-2xl px-4">
                             {notificationMessage.includes("can't be added due to schedule conflicts") ? (
                                 // Enhanced notification for task addition conflicts
-                                <div className="bg-white dark:bg-gray-800 border-l-4 border-orange-500 rounded-lg shadow-xl max-w-2xl mx-4">
-                                    <div className="p-6">
+                                <div className="bg-white dark:bg-gray-800 border-l-4 border-orange-500 rounded-lg shadow-xl">
+                                    <div className="p-4 sm:p-6">
                                         <div className="flex items-start space-x-3">
                                             <div className="flex-shrink-0">
                                                 <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
@@ -1387,15 +1419,15 @@ function App() {
                                                     </svg>
                                                 </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                                                     Task Cannot Be Added
                                                 </h3>
                                                 <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                                                     <p className="mb-3">
                                                         The task <span className="font-medium text-gray-900 dark:text-white">"{notificationMessage.match(/Task "([^"]+)"/)?.[1] || 'Unknown'}"</span> cannot be scheduled with your current settings.
                                                     </p>
-                                                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                                                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 sm:p-4">
                                                         <h4 className="font-medium text-orange-800 dark:text-orange-200 mb-2">Try these solutions:</h4>
                                                         <ul className="space-y-1 text-sm text-orange-700 dark:text-orange-300">
                                                             <li className="flex items-start space-x-2">
@@ -1417,7 +1449,7 @@ function App() {
                                                         </ul>
                                                     </div>
                                                 </div>
-                                                <div className="flex space-x-3">
+                                                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                                                     <button
                                                         onClick={() => setActiveTab('settings')}
                                                         className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
@@ -1437,12 +1469,12 @@ function App() {
                                 </div>
                             ) : (
                                 // Default notification for other messages
-                                <div className={`px-6 py-3 rounded-lg shadow-lg flex items-center space-x-4 ${
+                                <div className={`px-4 sm:px-6 py-3 rounded-lg shadow-lg flex items-center space-x-4 ${
                                     notificationMessage.includes('successfully') 
                                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
                                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                 }`}>
-                                    <span>{notificationMessage}</span>
+                                    <span className="text-sm">{notificationMessage}</span>
                                     <button 
                                         onClick={() => setNotificationMessage(null)} 
                                         className="text-current hover:opacity-75 font-bold"
@@ -1466,9 +1498,9 @@ function App() {
                     )}
 
                     {activeTab === 'tasks' && (
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             <button
-                                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2 mb-2"
+                                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center sm:justify-start space-x-2 mb-2"
                                 onClick={() => setShowTaskInput(true)}
                             >
                                 + Add Task
@@ -1555,14 +1587,14 @@ function App() {
                             tasks={tasks}
                         />
                     ) : activeTab === 'timer' && !currentTask ? (
-                        <div className="bg-white rounded-xl shadow-lg p-6 text-center dark:bg-gray-900 dark:shadow-gray-900">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-white">Study Timer</h2>
+                        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 text-center dark:bg-gray-900 dark:shadow-gray-900">
+                            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 dark:text-white">Study Timer</h2>
                             <p className="text-gray-500 dark:text-gray-300">Select a task to start studying</p>
                         </div>
                     ) : null}
 
                     {activeTab === 'commitments' && (
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             <FixedCommitmentInput 
                                 onAddCommitment={handleAddFixedCommitment} 
                                 existingCommitments={fixedCommitments}
@@ -1575,19 +1607,19 @@ function App() {
                                     onCancel={() => setEditingCommitment(null)}
                                 />
                             ) : (
-                                <div className="bg-white rounded-xl shadow-lg p-6 dark:bg-gray-900 dark:shadow-gray-900">
-                                    <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-white">Your Commitments</h2>
+                                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 dark:bg-gray-900 dark:shadow-gray-900">
+                                    <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 dark:text-white">Your Commitments</h2>
                                     <div className="space-y-3">
                                         {fixedCommitments.length === 0 ? (
                                             <p className="text-gray-500 text-center py-8 dark:text-gray-400">No commitments added yet. Add your class schedule, work hours, and other fixed commitments above.</p>
                                         ) : (
                                             fixedCommitments.map((commitment) => (
-                                                <div key={commitment.id} className="p-6 border border-gray-200 rounded-xl bg-white hover:shadow-md transition-all duration-200 dark:bg-gray-800 dark:border-gray-700">
+                                                <div key={commitment.id} className="p-4 sm:p-6 border border-gray-200 rounded-xl bg-white hover:shadow-md transition-all duration-200 dark:bg-gray-800 dark:border-gray-700">
                                                     <div className="flex items-start justify-between">
-                                                        <div className="flex-1">
+                                                        <div className="flex-1 min-w-0">
                                                             <div className="flex items-center space-x-3 mb-3">
-                                                                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{commitment.title}</h3>
-                                                                <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
+                                                                <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">{commitment.title}</h3>
+                                                                <span className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full capitalize flex-shrink-0 ${
                                                                     commitment.type === 'class' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
                                                                     commitment.type === 'work' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
                                                                     commitment.type === 'appointment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
@@ -1603,17 +1635,17 @@ function App() {
                                                                 </div>
                                                                 <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                                                                     <span className="font-medium">📅</span>
-                                                                    <span>{commitment.daysOfWeek.map(day => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]).join(', ')}</span>
+                                                                    <span className="truncate">{commitment.daysOfWeek.map(day => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]).join(', ')}</span>
                                                                 </div>
                                                                 {commitment.location && (
                                                                     <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                                                                         <span className="font-medium">📍</span>
-                                                                        <span>{commitment.location}</span>
+                                                                        <span className="truncate">{commitment.location}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center space-x-2 ml-4">
+                                                        <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
                                                             <button
                                                                 onClick={() => setEditingCommitment(commitment)}
                                                                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
@@ -1640,7 +1672,7 @@ function App() {
                     )}
 
                     {activeTab === 'settings' && (
-                        <div className="bg-white rounded-xl shadow-lg p-6 dark:bg-gray-900 dark:shadow-gray-900">
+                        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 dark:bg-gray-900 dark:shadow-gray-900">
                             <Settings
                                 settings={settings}
                                 onUpdateSettings={handleUpdateSettings}

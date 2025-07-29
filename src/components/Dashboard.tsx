@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3, XCircle } from 'lucide-react';
+import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3, XCircle, CheckSquare, Play, BarChart3 } from 'lucide-react';
 import { Task, StudyPlan } from '../types';
 import { formatTime, getLocalDateString, checkSessionStatus } from '../utils/scheduling';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -144,26 +144,19 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
 
   return (
     <div className="space-y-6">
-      {/* Welcome Message for New Users */}
-      {!hasCompletedTutorial && tasks.length === 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-400 p-6 rounded-lg dark:from-blue-900/20 dark:to-purple-900/20 dark:border-blue-600">
-          <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0">
-              <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-                Welcome to TimePilot! 🚀
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Ready to take control of your time? Start by adding your first task and learn how TimePilot can help you manage your schedule effectively.
-              </p>
-              <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                <span>💡</span>
-                <span>Click the "Start Tutorial" button in the bottom right to get started!</span>
-              </div>
-            </div>
-          </div>
+      {/* Welcome Section */}
+      {!hasCompletedTutorial && (
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-4 sm:p-6 shadow-lg">
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome to TimePilot! 🚀</h1>
+          <p className="text-blue-100 mb-4">
+            Your intelligent study planning companion. Let's get you started with your first task!
+          </p>
+          <button
+            onClick={() => onGenerateStudyPlan?.()}
+            className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+          >
+            Start Tutorial
+          </button>
         </div>
       )}
 

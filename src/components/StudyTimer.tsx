@@ -128,191 +128,127 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 dark:bg-gray-900 dark:shadow-gray-900">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-2 dark:text-white">Study Timer</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{currentTask.title}</p>
-      </div>
-
-      <div className="mb-8">
-        <div className="relative w-48 h-48 mx-auto mb-6">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              stroke="#e5e7eb"
-              strokeWidth="8"
-              fill="none"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              stroke="url(#gradient)"
-              strokeWidth="8"
-              fill="none"
-              strokeDasharray={`${progressPercentage * 2.51} 251`}
-              strokeLinecap="round"
-              className="transition-all duration-300 ease-out"
-            />
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#3B82F6" />
-                <stop offset="100%" stopColor="#8B5CF6" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-800">
-                {timer.isRunning
-                  ? formatTimeForTimerWithSeconds(timer.currentTime)
-                  : formatTimeForTimer(timer.currentTime)}
-              </div>
-              <div className="text-sm text-gray-500">
-                {Math.round(progressPercentage)}% complete
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-center space-x-4 timer-controls">
-          {!timer.isRunning ? (
-            <button
-              onClick={handleStart}
-              className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-blue-700 transition-all duration-200 flex items-center space-x-2"
-            >
-              <Play size={20} />
-              <span>Start</span>
-            </button>
-          ) : (
-            <button
-              onClick={handlePause}
-              className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 flex items-center space-x-2"
-            >
-              <Pause size={20} />
-              <span>Pause</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleStop}
-            className="bg-gradient-to-r from-red-500 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-red-600 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2"
-          >
-            <Square size={20} />
-            <span>Stop</span>
-          </button>
-
-          <button
-            onClick={handleReset}
-            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors duration-200 flex items-center space-x-2"
-          >
-            <RotateCcw size={20} />
-            <span>Reset</span>
-          </button>
-        </div>
-
-        {/* Testing buttons */}
-        <div className="flex justify-center space-x-4 mt-4">
-          <button
-            onClick={() => {
-              // This would need to be handled by the parent component
-              // For now, we'll just stop the timer
-              onTimerStop();
-            }}
-            className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 flex items-center space-x-2"
-          >
-            <span>Finish Timer (Test)</span>
-          </button>
-          
-          <button
-            onClick={onTimerSpeedUp}
-            className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-2 rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 flex items-center space-x-2"
-          >
-            <span>Speed Up 5min (Test)</span>
-          </button>
-        </div>
-
-        {/* Mark session as done button appears only when timer is finished */}
-        {timer.currentTime === 0 && !timer.isRunning && currentTask && (
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={handleMarkSessionDone}
-              className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-8 py-3 rounded-lg hover:from-green-600 hover:to-blue-700 transition-all duration-200 text-lg font-semibold flex items-center space-x-2"
-            >
-              <CheckCircle size={20} />
-              <span>Mark session as done</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Completion Modal */}
-      {showCompletionModal && completionData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="text-green-600 dark:text-green-400" size={32} />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                Session Complete!
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                Great work on "{completionData.taskTitle}"
+    <div className="space-y-6">
+      {/* Task Info */}
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 dark:bg-gray-900 dark:shadow-gray-900">
+        <div className="flex items-center space-x-3 mb-4">
+          <BookOpen className="text-blue-600 dark:text-blue-400" size={24} />
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white truncate">
+              {currentTask.title}
+            </h2>
+            {currentSession && (
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Session {currentSession.sessionNumber} • {formatTimeForTimer(currentSession.allocatedHours)}
               </p>
-            </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {Math.round(completionData.timeSpent / 60)}m
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">Time Spent</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    Session {completionData.sessionNumber}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">Completed</div>
-                </div>
+      {/* Timer Display */}
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 dark:bg-gray-900 dark:shadow-gray-900">
+        <div className="text-center">
+          <div className="mb-6">
+            <div className="text-4xl sm:text-6xl lg:text-8xl font-bold text-gray-800 dark:text-white mb-2">
+              {formatTimeForTimerWithSeconds(timer.currentTime)}
+            </div>
+            <div className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              {timer.isRunning ? 'Time Remaining' : 'Paused'}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-3 sm:h-4 dark:bg-gray-700">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 sm:h-4 rounded-full transition-all duration-300"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
+              {Math.round(progressPercentage)}% complete
+            </div>
+          </div>
+
+          {/* Timer Controls */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6">
+            {!timer.isRunning ? (
+              <button
+                onClick={handleStart}
+                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-4 sm:px-6 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-200 text-sm sm:text-base font-semibold"
+              >
+                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Start</span>
+              </button>
+            ) : (
+              <button
+                onClick={handlePause}
+                className="flex items-center space-x-2 bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 px-4 sm:px-6 rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 text-sm sm:text-base font-semibold"
+              >
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Pause</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleStop}
+              className="flex items-center space-x-2 bg-gray-500 text-white py-3 px-4 sm:px-6 rounded-lg hover:bg-gray-600 transition-all duration-200 text-sm sm:text-base font-semibold"
+            >
+              <Square className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Stop</span>
+            </button>
+
+            <button
+              onClick={handleReset}
+              className="flex items-center space-x-2 bg-gray-300 text-gray-700 py-3 px-4 sm:px-6 rounded-lg hover:bg-gray-400 transition-all duration-200 text-sm sm:text-base font-semibold dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+            >
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Reset</span>
+            </button>
+
+            <button
+              onClick={onTimerSpeedUp}
+              className="flex items-center space-x-2 bg-purple-500 text-white py-3 px-4 sm:px-6 rounded-lg hover:bg-purple-600 transition-all duration-200 text-sm sm:text-base font-semibold"
+              title="Speed up timer (for testing)"
+            >
+              <span>⏩</span>
+              <span>Speed Up</span>
+            </button>
+          </div>
+
+          {/* Session Actions */}
+          {timer.currentTime === 0 && (
+            <div className="space-y-3">
+              <button
+                onClick={handleMarkSessionDone}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base font-semibold"
+              >
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Mark Session Complete</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Completion Flow */}
+      {showCompletionModal && completionData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">🎉</div>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                Session Complete!
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Great job completing your session for <span className="font-semibold">{completionData.taskTitle}</span>
+              </p>
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  <span className="font-semibold">Time spent:</span> {formatTimeForTimerWithSeconds(completionData.timeSpent)}
+                </p>
               </div>
-              
-              {/* Task Progress */}
-              {studyPlans && tasks && currentTask && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                  <div className="text-center mb-2">
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Task Progress
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-green-500 to-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${(() => {
-                            const allSessionsForTask = studyPlans.flatMap(plan => plan.plannedTasks).filter(s => s.taskId === currentTask.id);
-                            const completedSessions = allSessionsForTask.filter(s => s.done || s.status === 'skipped').length;
-                            const totalSessions = allSessionsForTask.length;
-                            return totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
-                          })()}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {(() => {
-                        const allSessionsForTask = studyPlans.flatMap(plan => plan.plannedTasks).filter(s => s.taskId === currentTask.id);
-                        const completedSessions = allSessionsForTask.filter(s => s.done || s.status === 'skipped').length;
-                        const totalSessions = allSessionsForTask.length;
-                        return `${completedSessions}/${totalSessions}`;
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="space-y-3">
@@ -320,24 +256,24 @@ const StudyTimer: React.FC<StudyTimerProps> = ({
                 onClick={handleContinueWithNext}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2"
               >
-                <ArrowRight size={20} />
-                <span>Continue with next session</span>
+                <ArrowRight className="w-4 h-4" />
+                <span>Continue with Next Session</span>
               </button>
-              
+
               <button
                 onClick={handleTakeBreak}
                 className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 px-4 rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 flex items-center justify-center space-x-2"
               >
-                <Coffee size={20} />
-                <span>Take a break</span>
+                <Coffee className="w-4 h-4" />
+                <span>Take a Break</span>
               </button>
-              
+
               <button
                 onClick={handleReviewWork}
                 className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-4 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-200 flex items-center justify-center space-x-2"
               >
-                <BookOpen size={20} />
-                <span>Review completed work</span>
+                <BookOpen className="w-4 h-4" />
+                <span>Review Completed Work</span>
               </button>
             </div>
           </div>
