@@ -873,99 +873,38 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           border-top: 1px solid #374151 !important;
         }
         
-        /* Ensure proper column widths on mobile */
+        /* Mobile calendar improvements */
         @media (max-width: 640px) {
-          .rbc-time-header-content {
-            min-width: 800px !important;
-          }
-          
+          /* Horizontal scrolling */
+          .rbc-time-header-content,
           .rbc-time-content {
             min-width: 800px !important;
           }
           
-          .rbc-time-gutter {
-            position: sticky !important;
-            left: 0 !important;
-            z-index: 10 !important;
-            background: inherit !important;
-          }
-          
-          .dark .rbc-time-gutter {
-            background: #18181b !important;
-          }
-          
-          /* Fix header alignment with content */
-          .rbc-time-header {
-            display: flex !important;
-            min-width: 800px !important;
-            height: auto !important;
-          }
-          
+          /* Sticky time gutter */
+          .rbc-time-gutter,
           .rbc-time-header-gutter {
             position: sticky !important;
             left: 0 !important;
             z-index: 10 !important;
             background: inherit !important;
-            width: 60px !important;
-            min-width: 60px !important;
-            height: auto !important;
           }
           
+          .dark .rbc-time-gutter,
           .dark .rbc-time-header-gutter {
             background: #18181b !important;
           }
           
-          /* Ensure header and content columns align */
-          .rbc-time-header-content .rbc-header {
-            flex: 1 !important;
-            min-width: 0 !important;
-            text-align: center !important;
-            padding: 8px 4px !important;
-            height: auto !important;
-            min-height: 40px !important;
-          }
-          
-          .rbc-time-content .rbc-timeslot-group {
-            flex: 1 !important;
-            min-width: 0 !important;
-          }
-          
-          /* Fix table layout for proper alignment */
-          .rbc-time-view .rbc-time-header {
-            table-layout: fixed !important;
-          }
-          
-          .rbc-time-view .rbc-time-content {
-            table-layout: fixed !important;
-          }
-          
-          /* Ensure perfect alignment between header and content */
-          .rbc-time-header-content,
-          .rbc-time-content {
+          /* Fix squished header */
+          .rbc-header {
+            padding: 12px 8px !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            line-height: 1.2 !important;
+            min-height: 50px !important;
             display: flex !important;
-            width: 100% !important;
-          }
-          
-          .rbc-time-header-content > div {
-            flex: 1 !important;
-            min-width: 0 !important;
-            width: calc(100% / 7) !important; /* 7 days */
-            min-height: 40px !important;
-          }
-          
-          .rbc-time-content > div {
-            flex: 1 !important;
-            min-width: 0 !important;
-            width: calc(100% / 7) !important; /* 7 days */
-          }
-          
-          /* Ensure gutter columns have consistent width */
-          .rbc-time-header-gutter,
-          .rbc-time-gutter {
-            width: 60px !important;
-            min-width: 60px !important;
-            max-width: 60px !important;
-            flex-shrink: 0 !important;
+            align-items: center !important;
+            justify-content: center !important;
           }
         }
         
