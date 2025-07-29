@@ -110,20 +110,20 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
     <div className="space-y-4 sm:space-y-6">
       {/* Auto-removed tasks notifications */}
       {autoRemovedTasks.map((title) => (
-        <div key={title} className="flex items-center bg-red-100 text-red-800 px-4 py-2 rounded shadow border-l-4 border-red-500">
+            <div key={title} className="flex items-center bg-red-100 text-red-800 px-4 py-2 rounded shadow border-l-4 border-red-500">
           <Info className="w-4 h-4 mr-2 flex-shrink-0" />
           <span className="text-sm flex-1">
             Task "{title}" was automatically removed due to missed deadline.
           </span>
-          <button
+            <button
             onClick={() => onDismissAutoRemovedTask?.(title)}
             className="ml-2 text-red-600 hover:text-red-800"
-          >
+            >
             <X className="w-4 h-4" />
-          </button>
+            </button>
         </div>
       ))}
-
+      
       {/* Active Tasks */}
       <div className="space-y-3">
         <div className="flex items-center space-x-2 mb-2">
@@ -147,7 +147,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                 key={task.id}
                 className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-md transition-all duration-200 dark:bg-gray-800 dark:border-gray-700"
               >
-                {editingTaskId === task.id ? (
+              {editingTaskId === task.id ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
@@ -173,7 +173,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         />
                       </div>
                     </div>
-
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
@@ -230,14 +230,14 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         <select
                           value={editFormData.importance ? 'high' : 'low'}
                           onChange={(e) => setEditFormData({ ...editFormData, importance: e.target.value === 'high' })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                           <option value="low">Low Priority</option>
                           <option value="high">High Priority</option>
                         </select>
                       </div>
-                    </div>
-
+                          </div>
+                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                         Description
@@ -246,10 +246,10 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         value={editFormData.description || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         placeholder="Optional description..."
-                      />
-                    </div>
+                            />
+                          </div>
 
                     {/* Warning for low-priority urgent tasks */}
                     {isLowPriorityUrgent && (
@@ -258,7 +258,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         <span className="text-sm text-yellow-700 dark:text-yellow-300">
                           This task is due soon but marked as low priority. Consider increasing the priority.
                         </span>
-                      </div>
+                        </div>
                     )}
 
                     {/* Warning for past deadline */}
@@ -270,7 +270,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         </span>
                       </div>
                     )}
-
+                    
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                       <button
                         onClick={saveEdit}
@@ -284,25 +284,25 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                       >
                         Cancel
                       </button>
-                    </div>
                   </div>
-                ) : (
+                </div>
+              ) : (
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex items-center space-x-2 mb-2">
                           <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">
-                            {task.title}
-                          </h3>
-                          {task.importance && (
+                          {task.title}
+                        </h3>
+                        {task.importance && (
                             <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full dark:bg-red-900 dark:text-red-200 flex-shrink-0">
-                              Important
-                            </span>
-                          )}
+                            Important
+                          </span>
+                        )}
                         </div>
                         
                         <div className="space-y-2">
-                          {task.subject && (
+                        {task.subject && (
                             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                               <span className="font-medium">📚</span>
                               <span className="truncate">{task.subject}</span>
@@ -319,46 +319,46 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                               <span className="font-medium">📅</span>
                               <span className={`${getUrgencyColor(task.deadline)}`}>
                                 Due: {new Date(task.deadline).toLocaleDateString()}
-                              </span>
+                          </span>
                             </div>
-                          )}
+                        )}
                           
-                          {task.category && (
+                        {task.category && (
                             <div className="flex items-center space-x-2">
                               <span className={`text-xs px-2 py-1 rounded-full ${getCategoryColor(task.category)}`}>
-                                {task.category}
-                              </span>
+                            {task.category}
+                          </span>
                             </div>
-                          )}
+                        )}
                           
-                          {task.description && (
+                      {task.description && (
                             <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
+                          {task.description}
+                        </p>
+                      )}
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
                         <button
                           onClick={() => startEditing(task)}
-                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
                           title="Edit task"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => onDeleteTask(task.id)}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
                           title="Delete task"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
-                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
             ))}
           </div>
         )}
@@ -369,7 +369,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <CheckCircle2 className="text-green-600 dark:text-green-400" size={20} />
+            <CheckCircle2 className="text-green-600 dark:text-green-400" size={20} />
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">Completed Tasks</h2>
               <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-200">
                 {completedTasks.length}
@@ -384,25 +384,25 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
           </div>
 
           {showCompletedTasks && (
-            <div className="space-y-3">
-              {completedTasks.map((task) => (
+          <div className="space-y-3">
+            {completedTasks.map((task) => (
                 <div
                   key={task.id}
                   className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 dark:bg-gray-800 dark:border-gray-700"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex items-center space-x-2 mb-2">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-600 dark:text-gray-300 truncate line-through">
-                          {task.title}
-                        </h3>
+                        {task.title}
+                      </h3>
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-200">
                           Completed
                         </span>
                       </div>
                       
                       <div className="space-y-1">
-                        {task.subject && (
+                      {task.subject && (
                           <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                             <span className="font-medium">📚</span>
                             <span className="truncate">{task.subject}</span>
@@ -419,23 +419,23 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                             <span className="font-medium">📅</span>
                             <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
                           </div>
-                        )}
-                      </div>
+                      )}
+                    </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
-                      <button
-                        onClick={() => onDeleteTask(task.id)}
-                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
-                        title="Delete task"
-                      >
+                    <button
+                      onClick={() => onDeleteTask(task.id)}
+                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
+                      title="Delete task"
+                    >
                         <Trash2 size={16} />
-                      </button>
+                    </button>
                     </div>
-                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           )}
         </div>
       )}

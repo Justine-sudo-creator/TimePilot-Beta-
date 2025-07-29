@@ -1275,7 +1275,7 @@ function App() {
         setShowInteractiveTutorial(false);
         // Mark tutorial as completed when dismissed so the button and welcome message don't appear again
         localStorage.setItem('timepilot-interactive-tutorial-complete', 'true');
-        setNotificationMessage('Tutorial dismissed. You can restart it anytime from the tutorial button.');
+        setNotificationMessage('Tutorial dismissed. You can restart it anytime from the tutorial button in Settings.');
         setTimeout(() => setNotificationMessage(null), 3000);
     };
 
