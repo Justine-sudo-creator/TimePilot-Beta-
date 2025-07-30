@@ -341,6 +341,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                       
                       <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
                         <button
+                          onClick={() => onUpdateTask(task.id, { status: 'completed' })}
+                          className="p-2 text-green-500 hover:text-green-700 hover:bg-green-100 rounded-lg transition-colors dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900"
+                          title="Mark as completed"
+                        >
+                          <CheckCircle2 size={16} />
+                        </button>
+                        <button
                           onClick={() => startEditing(task)}
                         className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
                           title="Edit task"
@@ -424,14 +431,21 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
-                    <button
-                      onClick={() => onDeleteTask(task.id)}
-                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
-                      title="Delete task"
-                    >
+                      <button
+                        onClick={() => onUpdateTask(task.id, { status: 'pending' })}
+                        className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900"
+                        title="Reactivate task"
+                      >
+                        <BookOpen size={16} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteTask(task.id)}
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
+                        title="Delete task"
+                      >
                         <Trash2 size={16} />
-                    </button>
-                  </div>
+                      </button>
+                    </div>
                 </div>
               </div>
             ))}
