@@ -155,6 +155,24 @@ const Settings: React.FC<SettingsProps> = ({
     return { isValid: true, message: "" };
   };
 
+  const validateRescheduledSessions = () => {
+    // Check for rescheduled/redistributed sessions across all study plans
+    const rescheduledSessions = studyPlans.flatMap(plan => 
+      plan.plannedTasks.filter(session => {
+        // Check if session is manually rescheduled or redistributed
+        return session.isManualOverride === true || (!!session.originalTime && !!session.originalDate);
+      })
+    );
+
+    if (rescheduledSessions.length > 0) {
+      return {
+        isValid: false,
+        message: `You have ${rescheduledSessions.length} rescheduled session${rescheduledSessions.length > 1 ? 's' : ''}. Please go to the Study Plan tab to handle these sessions before changing settings.`
+      };
+    }
+    return { isValid: true, message: "" };
+  };
+
   const getValidationMessages = () => {
     const messages = [];
     
@@ -193,6 +211,11 @@ const Settings: React.FC<SettingsProps> = ({
       messages.push({ type: 'error', message: missedSessionsValidation.message });
     }
     
+    const rescheduledSessionsValidation = validateRescheduledSessions();
+    if (!rescheduledSessionsValidation.isValid) {
+      messages.push({ type: 'error', message: rescheduledSessionsValidation.message });
+    }
+    
     return messages;
   };
 
@@ -205,6 +228,13 @@ const Settings: React.FC<SettingsProps> = ({
     const missedSessionsValidation = validateMissedSessions();
     if (!missedSessionsValidation.isValid) {
       // Don't save settings if there are missed sessions
+      return;
+    }
+    
+    // Check for rescheduled sessions before saving
+    const rescheduledSessionsValidation = validateRescheduledSessions();
+    if (!rescheduledSessionsValidation.isValid) {
+      // Don't save settings if there are rescheduled sessions
       return;
     }
     
@@ -563,8 +593,8 @@ const Settings: React.FC<SettingsProps> = ({
                   : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
               }`}
           >
-            {validationMessages.some(msg => msg.type === 'error') && validateMissedSessions().isValid === false 
-              ? 'Handle Missed Sessions First' 
+            {validationMessages.some(msg => msg.type === 'error') && (validateMissedSessions().isValid === false || validateRescheduledSessions().isValid === false)
+              ? 'Handle Sessions First' 
               : 'Save Settings'
             }
           </button>

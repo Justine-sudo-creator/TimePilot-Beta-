@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3, XCircle, CheckSquare, Play, BarChart3 } from 'lucide-react';
+import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3, XCircle } from 'lucide-react';
 import { Task, StudyPlan } from '../types';
 import { formatTime, getLocalDateString, checkSessionStatus } from '../utils/scheduling';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -55,8 +55,6 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
   }
 
   // Recalculate stats for filtered period
-  const allTasksInFilteredPlans = Array.from(new Set(filteredPlans.flatMap(plan => plan.plannedTasks.map(s => s.taskId))));
-  const filteredTasks = tasks.filter(t => allTasksInFilteredPlans.includes(t.id));
   const completedTasks = tasks.filter(task => task.status === 'completed');
   const pendingTasks = tasks.filter(task => task.status === 'pending');
   const totalEstimatedHours = pendingTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
@@ -74,9 +72,6 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
       if (a.importance !== b.importance) return a.importance ? -1 : 1;
       return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
     });
-
-  // Filter for active tasks only
-  const activeTasks = tasks.filter(task => task.status === 'pending' && task.estimatedHours > 0);
 
   // Today's plan and workday status for filtered period
   const today = getLocalDateString();
@@ -151,12 +146,9 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
           <p className="text-blue-100 mb-4">
             Your intelligent study planning companion. Let's get you started with your first task!
           </p>
-          <button
-            onClick={() => onGenerateStudyPlan?.()}
-            className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-          >
-            Start Tutorial
-          </button>
+          <p className="text-blue-100 text-sm">
+            Press the Start Tutorial button
+          </p>
         </div>
       )}
 

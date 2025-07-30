@@ -354,7 +354,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         >
                           <Trash2 size={16} />
                         </button>
-                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -431,7 +431,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                     >
                         <Trash2 size={16} />
                     </button>
-                    </div>
+                  </div>
                 </div>
               </div>
             ))}

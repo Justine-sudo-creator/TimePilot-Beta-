@@ -6,6 +6,7 @@ import { StudyPlan, FixedCommitment, Task } from '../types';
 import { BookOpen, Clock, Settings, X } from 'lucide-react';
 import { checkSessionStatus } from '../utils/scheduling';
 import { getLocalDateString } from '../utils/scheduling';
+import MobileCalendarView from './MobileCalendarView';
 
 const localizer = momentLocalizer(moment);
 
@@ -140,6 +141,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     };
   });
   const [selectedManualSession, setSelectedManualSession] = useState<FixedCommitment | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Save color settings to localStorage whenever they change
   useEffect(() => {
@@ -151,7 +164,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     localStorage.setItem('timepilot-calendar-interval', timeInterval.toString());
   }, [timeInterval]);
 
-  const handleSpecialColorChange = (key: keyof ColorSettings, color: string | Record<string, string>) => {
+  const handleSpecialColorChange = (key: keyof ColorSettings, color: string) => {
     setColorSettings(prev => ({
       ...prev,
       [key]: color
@@ -529,10 +542,21 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   // Custom event component with category emoji
   const CustomEventComponent = ({ event, ...props }: any) => {
-    let categoryEmoji = '';
-    let statusIndicator = '';
-    
-    if (event.resource.type === 'study') {
+          let categoryEmoji = '';
+      let statusIndicator = '';
+      let duration = '';
+      
+      // Calculate duration
+      const durationHours = moment(event.end).diff(moment(event.start), 'hours', true);
+      const durationMinutes = moment(event.end).diff(moment(event.start), 'minutes', true);
+      
+      if (durationHours >= 1) {
+        duration = `(${Math.round(durationHours)}h)`;
+      } else {
+        duration = `(${Math.round(durationMinutes)}m)`;
+      }
+      
+      if (event.resource.type === 'study') {
       const task = event.resource.data.task;
       categoryEmoji = getCategoryEmoji(task?.category);
       
@@ -575,9 +599,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             {categoryEmoji && (
               <span className="text-sm">{categoryEmoji}</span>
             )}
-            <span className="text-sm font-medium leading-tight">
-              {event.title}
-            </span>
+                          <span className="text-sm font-medium leading-tight">
+                {event.title} {duration}
+              </span>
             {statusIndicator && (
               <span className="text-xs ml-1">{statusIndicator}</span>
             )}
@@ -590,19 +614,19 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   // Custom toolbar for interval selector
   function CustomToolbar({ label, onNavigate, onView, view }: any) {
     return (
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-3 sm:space-y-0">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <button onClick={() => onNavigate('PREV')} className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
             <span className="sr-only">Previous</span>
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <span className="font-semibold text-base sm:text-lg text-gray-800 dark:text-gray-100">{label}</span>
+          <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{label}</span>
           <button onClick={() => onNavigate('NEXT')} className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
             <span className="sr-only">Next</span>
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+        <div className="flex items-center space-x-2">
           <select
             value={timeInterval}
             onChange={e => setTimeInterval(Number(e.target.value))}
@@ -613,20 +637,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({
               <option key={opt.value} value={opt.value} className="dark:bg-gray-800 dark:text-gray-100">{opt.label}</option>
             ))}
           </select>
-          <div className="flex space-x-1">
           <button
             onClick={() => onView('day')}
-              className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium ${view === 'day' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+            className={`px-2 py-1 rounded-lg text-sm font-medium ${view === 'day' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
           >Day</button>
           <button
             onClick={() => onView('week')}
-              className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium ${view === 'week' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+            className={`px-2 py-1 rounded-lg text-sm font-medium ${view === 'week' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
           >Week</button>
           <button
             onClick={() => onView('month')}
-              className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium ${view === 'month' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+            className={`px-2 py-1 rounded-lg text-sm font-medium ${view === 'month' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
           >Month</button>
-          </div>
         </div>
       </div>
     );
@@ -638,24 +660,27 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     minTime = new Date(0, 0, 0, 4, 0, 0);  // 4 AM
     maxTime = new Date(0, 0, 0, 23, 59, 0);  // 11:59 PM (just before midnight)
 
-  // State for mobile legend toggle
-  const [showLegends, setShowLegends] = useState(false);
+  // If mobile, render the mobile calendar component
+  if (isMobile) {
+    return (
+      <MobileCalendarView
+        studyPlans={studyPlans}
+        fixedCommitments={fixedCommitments}
+        tasks={tasks}
+        onSelectTask={onSelectTask}
+        onStartManualSession={onStartManualSession}
+        onDeleteFixedCommitment={onDeleteFixedCommitment}
+      />
+    );
+  }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl shadow-xl p-4 sm:p-6 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 dark:shadow-gray-900 dark:text-gray-100">
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center space-x-2 dark:text-white">
-          <BookOpen className="text-blue-600 dark:text-blue-400" size={24} />
+    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl shadow-xl p-6 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 dark:shadow-gray-900 dark:text-gray-100">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center space-x-2 dark:text-white">
+          <BookOpen className="text-blue-600 dark:text-blue-400" size={28} />
           <span>Smart Calendar</span>
         </h2>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowLegends(!showLegends)}
-            className="sm:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
-            title="Toggle Legends"
-          >
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Legend</span>
-          </button>
         <button
           onClick={() => setShowColorSettings(true)}
           className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
@@ -664,16 +689,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           <Settings size={20} className="text-gray-600 dark:text-gray-300" />
         </button>
       </div>
-      </div>
-      
-      {/* Legends - Collapsible on mobile */}
-      <div className={`mb-4 ${showLegends ? 'block' : 'hidden sm:block'}`}>
-        <div className="flex flex-wrap gap-2 sm:gap-4">
+      {/* Legends */}
+      <div className="mb-4 flex flex-wrap gap-4">
         {/* Task Category Legends */}
         {taskCategories.map(category => (
           <div key={category} className="flex items-center space-x-2">
-              <span style={{ background: categoryColorMap[category], width: 12, height: 12, borderRadius: '50%', display: 'inline-block', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}></span>
-              <span className="text-xs sm:text-sm text-gray-700 font-medium dark:text-gray-300 capitalize">{category}</span>
+            <span style={{ background: categoryColorMap[category], width: 16, height: 16, borderRadius: '50%', display: 'inline-block', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}></span>
+            <span className="text-sm text-gray-700 font-medium dark:text-gray-300 capitalize">{category}</span>
         </div>
         ))}
         {/* Default Category Legends (for categories not yet used) */}
@@ -707,33 +729,27 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           }
           return (
             <div key={category} className="flex items-center space-x-2">
-                <span style={{ background: color, width: 12, height: 12, borderRadius: '50%', display: 'inline-block', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}></span>
-                <span className="text-xs sm:text-sm text-gray-700 font-medium dark:text-gray-300 capitalize">{category}</span>
+              <span style={{ background: color, width: 16, height: 16, borderRadius: '50%', display: 'inline-block', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}></span>
+              <span className="text-sm text-gray-700 font-medium dark:text-gray-300 capitalize">{category}</span>
             </div>
           );
         })}
         {/* Commitment Legend */}
         <div className="flex items-center space-x-2">
-            <span style={{ background: colorSettings.commitmentColor, width: 12, height: 12, borderRadius: '50%', display: 'inline-block', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}></span>
-            <span className="text-xs sm:text-sm text-gray-700 font-medium dark:text-gray-300">Commitments</span>
+          <span style={{ background: colorSettings.commitmentColor, width: 16, height: 16, borderRadius: '50%', display: 'inline-block', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}></span>
+          <span className="text-sm text-gray-700 font-medium dark:text-gray-300">Commitments</span>
         </div>
       </div>
-      </div>
-      
       <div
         style={{
-          height: 'calc(100vh - 300px)', // Responsive height
-          minHeight: '400px', // Minimum height
-          maxHeight: '650px', // Maximum height
-          borderRadius: '1rem',
-          overflow: 'auto',
+          height: '650px',
+          borderRadius: '1.5rem',
+          overflow: 'hidden',
           background: 'rgba(255,255,255,0.95)',
           boxShadow: '0 4px 24px rgba(80,80,180,0.07)',
         }}
         className="calendar-grid-container dark:bg-gray-900 dark:bg-opacity-95"
       >
-        <div className="calendar-scroll-container">
-          <div className="calendar-content-wrapper">
         <Calendar
           localizer={localizer}
           events={events}
@@ -766,8 +782,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           rtl={false}
           dayLayoutAlgorithm="no-overlap"
         />
-          </div>
-        </div>
       </div>
       {/* Add custom CSS for thicker interval lines and better spacing */}
       <style>{`
@@ -794,55 +808,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         }
         .dark .rbc-label, .dark .rbc-header, .dark .rbc-date-cell, .dark .rbc-timeslot-group, .dark .rbc-time-gutter, .dark .rbc-time-header-content {
           color: #e5e7eb !important;
-        }
-        
-        /* Mobile-specific improvements */
-        @media (max-width: 640px) {
-          .calendar-scroll-container {
-            overflow-x: auto !important;
-            overflow-y: visible !important;
-            -webkit-overflow-scrolling: touch !important;
-          }
-          
-          .calendar-content-wrapper {
-            min-width: 800px !important;
-            width: 100% !important;
-          }
-          
-          .rbc-event {
-            min-height: 20px !important;
-            font-size: 11px !important;
-            padding: 2px 4px !important;
-          }
-          
-          .rbc-time-slot {
-            min-height: 20px !important;
-          }
-          
-          .rbc-timeslot-group {
-            min-height: 20px !important;
-          }
-          
-          .rbc-time-gutter {
-            font-size: 10px !important;
-            padding: 2px 4px !important;
-          }
-          
-          .rbc-header {
-            font-size: 14px !important;
-            padding: 8px 4px !important;
-            font-weight: 500 !important;
-            line-height: 1.2 !important;
-          }
-          
-          .rbc-toolbar {
-            padding: 8px 4px !important;
-          }
-          
-          .rbc-toolbar button {
-            padding: 4px 8px !important;
-            font-size: 12px !important;
-          }
         }
         
         /* Dynamic spacing based on interval size */
@@ -873,169 +838,195 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           border-top: 1px solid #374151 !important;
         }
         
-        /* Mobile calendar improvements */
-        @media (max-width: 640px) {
-          /* Horizontal scrolling */
-          .rbc-time-header-content,
-          .rbc-time-content {
-            min-width: 800px !important;
-          }
-          
-          /* Sticky time gutter */
-          .rbc-time-gutter,
-          .rbc-time-header-gutter {
-            position: sticky !important;
-            left: 0 !important;
-            z-index: 10 !important;
-            background: inherit !important;
-          }
-          
-          .dark .rbc-time-gutter,
-          .dark .rbc-time-header-gutter {
-            background: #18181b !important;
-          }
-          
-          /* Fix squished header */
-          .rbc-header {
-            padding: 12px 8px !important;
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            line-height: 1.2 !important;
-            min-height: 50px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-          }
-        }
-        
-        /* Better touch targets for mobile */
+        /* Ensure events have minimum height for readability */
         .rbc-event {
-          cursor: pointer !important;
-          transition: all 0.2s ease !important;
+          min-height: 22px !important;
+          min-width: 60px !important;
         }
         
-        .rbc-event:hover {
-          transform: scale(1.02) !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+        /* Better text sizing for event blocks */
+        .rbc-event .text-sm {
+          font-size: 12px !important;
+          line-height: 1.3 !important;
         }
         
-        /* Mobile event text overflow */
-        .rbc-event-content {
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          white-space: nowrap !important;
+        /* Enhanced time gutter for zoomed views */
+        .rbc-time-gutter {
+          min-width: 60px !important;
+          font-weight: 500 !important;
         }
         
-        /* Responsive calendar container */
-        .calendar-grid-container {
-          width: 100% !important;
-          max-width: 100% !important;
+        /* Better visual separation for zoomed intervals */
+        .rbc-time-header-content {
+          border-bottom: 2px solid #e0e7ef !important;
         }
         
-        /* Mobile toolbar improvements */
-        @media (max-width: 640px) {
-          .rbc-toolbar {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 8px !important;
-          }
-          
-          .rbc-toolbar .rbc-toolbar-label {
-            text-align: center !important;
-            font-size: 16px !important;
-          }
+        .dark .rbc-time-header-content {
+          border-bottom: 2px solid #27272a !important;
         }
       `}</style>
 
       {/* Color Settings Modal */}
       {showColorSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Customize Colors</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6 calendar-toolbar">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  Customize Calendar Colors
+                </h2>
                 <button
                   onClick={() => setShowColorSettings(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 >
-                <X size={20} />
+                  <X size={24} />
                 </button>
               </div>
 
-            <div className="space-y-4">
-              {/* Commitment Type Colors */}
+              <div className="space-y-6">
+                {/* Task Category Colors */}
                 <div>
-                <h4 className="font-medium text-gray-800 dark:text-white mb-3">Commitment Types</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {Object.entries(colorSettings.commitmentTypeColors).map(([type, color]) => (
-                    <div key={type} className="flex items-center space-x-3">
-                      <span className="text-sm text-gray-600 dark:text-gray-300 capitalize">{type}</span>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Task Category Colors</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* All default categories */}
+                    {['Academics', 'Personal', 'Learning', 'Home', 'Finance', 'Organization', 'Work', 'Health'].map(category => {
+                      let defaultColor = '#64748b';
+                      switch (category.toLowerCase()) {
+                        case 'academics':
+                          defaultColor = '#3b82f6'; // Blue
+                          break;
+                        case 'personal':
+                          defaultColor = '#a21caf'; // Purple
+                          break;
+                        case 'learning':
+                          defaultColor = '#a855f7'; // Lavender
+                          break;
+                        case 'home':
+                          defaultColor = '#f472b6'; // Light pink
+                          break;
+                        case 'finance':
+                          defaultColor = '#10b981'; // Green
+                          break;
+                        case 'organization':
+                          defaultColor = '#eab308'; // Yellow
+                          break;
+                        case 'work':
+                          defaultColor = '#f59e0b'; // Orange
+                          break;
+                        case 'health':
+                          defaultColor = '#ef4444'; // Red
+                          break;
+                      }
+                      return (
+                        <div key={category} className="flex items-center space-x-3">
                           <input
                             type="color"
-                        value={color}
-                        onChange={(e) => handleSpecialColorChange('commitmentTypeColors', { ...colorSettings.commitmentTypeColors, [type]: e.target.value })}
-                        className="w-8 h-8 rounded border-0 cursor-pointer"
-                      />
+                            value={categoryColorMap[category] || defaultColor}
+                            onChange={(e) => {
+                              // Update the category color map
+                              const newColorMap = { ...categoryColorMap };
+                              newColorMap[category] = e.target.value;
+                              // Note: This would need to be persisted if you want to save custom colors
+                            }}
+                            className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                            {category}
+                          </span>
                         </div>
-                  ))}
+                      );
+                    })}
+                    {/* Uncategorized tasks */}
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="color"
+                        value={colorSettings.uncategorizedTaskColor}
+                        onChange={(e) => handleSpecialColorChange('uncategorizedTaskColor', e.target.value)}
+                        className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Uncategorized
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-              {/* Special Colors */}
+                {/* Commitment Color */}
                 <div>
-                <h4 className="font-medium text-gray-800 dark:text-white mb-3">Special Colors</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Commitment Color</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Missed Sessions</span>
+                      <input
+                        type="color"
+                        value={colorSettings.commitmentColor}
+                        onChange={(e) => handleSpecialColorChange('commitmentColor', e.target.value)}
+                        className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        All Commitments
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Special Status Colors */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Special Status Colors</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div className="flex items-center space-x-3">
                       <input
                         type="color"
                         value={colorSettings.missedColor}
                         onChange={(e) => handleSpecialColorChange('missedColor', e.target.value)}
-                      className="w-8 h-8 rounded border-0 cursor-pointer"
+                        className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
                       />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Missed
+                      </span>
                     </div>
                     <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Overdue Sessions</span>
                       <input
                         type="color"
                         value={colorSettings.overdueColor}
                         onChange={(e) => handleSpecialColorChange('overdueColor', e.target.value)}
-                      className="w-8 h-8 rounded border-0 cursor-pointer"
+                        className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
                       />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Overdue
+                      </span>
                     </div>
                     <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Completed Sessions</span>
                       <input
                         type="color"
                         value={colorSettings.completedColor}
                         onChange={(e) => handleSpecialColorChange('completedColor', e.target.value)}
-                      className="w-8 h-8 rounded border-0 cursor-pointer"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Important Tasks</span>
-                    <input
-                      type="color"
-                      value={colorSettings.importantTaskColor}
-                      onChange={(e) => handleSpecialColorChange('importantTaskColor', e.target.value)}
-                      className="w-8 h-8 rounded border-0 cursor-pointer"
-                    />
+                        className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Completed
+                      </span>
                     </div>
                   </div>
                 </div>
 
-              <div className="flex space-x-3 pt-4">
+
+
+                {/* Action Buttons */}
+                <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={resetToDefaults}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     Reset to Defaults
                   </button>
                   <button
                     onClick={() => setShowColorSettings(false)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                  Close
+                    Done
                   </button>
+                </div>
               </div>
             </div>
           </div>
