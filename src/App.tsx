@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2, Menu, X } from 'lucide-react';
+import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2, Menu, X, HelpCircle } from 'lucide-react';
 import { Task, StudyPlan, UserSettings, FixedCommitment, StudySession, TimerState } from './types';
 import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback } from './utils/scheduling';
 
@@ -105,6 +105,8 @@ function App() {
     const [highlightedTab, setHighlightedTab] = useState<string | null>(null);
     const [highlightStudyPlanMode, setHighlightStudyPlanMode] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showHelpModal, setShowHelpModal] = useState(false);
+    const [showGCashModal, setShowGCashModal] = useState(false);
 
 
     useEffect(() => {
@@ -1334,6 +1336,13 @@ function App() {
                             <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6`} fill={hasUnscheduled ? '#fde047' : 'none'} />
                         </button>
                         <button
+                            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            onClick={() => setShowHelpModal(true)}
+                            title="Help & FAQ"
+                        >
+                            <HelpCircle size={20} />
+                        </button>
+                        <button
                             className="lg:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         >
@@ -1687,6 +1696,303 @@ function App() {
                         </div>
                     )}
                 </main>
+
+                {/* Help Modal */}
+                {showHelpModal && (
+                    <div 
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                        onClick={() => setShowHelpModal(false)}
+                    >
+                        <div 
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
+                                        <HelpCircle className="text-blue-600 dark:text-blue-400" size={28} />
+                                        <span>Help & FAQ</span>
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowHelpModal(false)}
+                                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="space-y-4">
+                                        <details className="group border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-gray-100">
+                                                <span>How does smart scheduling work?</span>
+                                                <svg className="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </summary>
+                                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    TimePilot analyzes your fixed commitments, energy patterns, and task priorities to find optimal time slots. 
+                                                    It learns from your completion rates to improve future estimates and automatically reschedules missed sessions.
+                                                </p>
+                                            </div>
+                                        </details>
+
+                                        <details className="group border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-gray-100">
+                                                <span>What if I miss a scheduled session?</span>
+                                                <svg className="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </summary>
+                                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    The app intelligently reschedules missed sessions to available time slots. 
+                                                    It learns from your patterns to suggest better times in the future and adjusts your schedule accordingly.
+                                                </p>
+                                            </div>
+                                        </details>
+
+                                        <details className="group border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-gray-100">
+                                                <span>How accurate are the time estimates?</span>
+                                                <svg className="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </summary>
+                                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Estimates improve over time as the app learns your actual completion times. 
+                                                    You can also manually adjust estimates based on your experience with each task.
+                                                </p>
+                                            </div>
+                                        </details>
+
+                                        <details className="group border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-gray-100">
+                                                <span>Can I customize the scheduling rules?</span>
+                                                <svg className="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </summary>
+                                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Yes! You can set your available hours, work days, study window, minimum session length, 
+                                                    and buffer time. The app adapts to your preferences and schedule.
+                                                </p>
+                                            </div>
+                                        </details>
+
+                                        <details className="group border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-gray-100">
+                                                <span>How do I get started?</span>
+                                                <svg className="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </summary>
+                                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    1. Add your tasks with deadlines and time estimates<br/>
+                                                    2. Set your fixed commitments (classes, work, etc.)<br/>
+                                                    3. Configure your study preferences in Settings<br/>
+                                                    4. Generate your first study plan<br/>
+                                                    5. Start using the timer to track your progress
+                                                </p>
+                                            </div>
+                                        </details>
+
+                                        <details className="group border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-gray-100">
+                                                <span>What makes TimePilot different?</span>
+                                                <svg className="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </summary>
+                                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    TimePilot uses intelligent scheduling that adapts to your actual usage patterns. 
+                                                    It learns from your completion rates, automatically reschedules missed sessions, 
+                                                    and provides real-time optimization suggestions to help you stay on track.
+                                                </p>
+                                            </div>
+                                        </details>
+                                    </div>
+
+                                    {/* Support Section */}
+                                    <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                                        <div className="text-center space-y-4">
+                                            <div className="flex items-center justify-center space-x-2">
+                                                <span className="text-2xl">☕</span>
+                                                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Support TimePilot</h3>
+                                                <span className="text-2xl">🚀</span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                If TimePilot has helped you manage your time better, consider supporting its development!
+                                            </p>
+                                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                                <button
+                                                    onClick={() => setShowGCashModal(true)}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                                                >
+                                                    <span className="text-lg">📱</span>
+                                                    <span>GCash</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => window.open('https://paypal.me/yourusername', '_blank')}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                                                >
+                                                    <span className="text-lg">💙</span>
+                                                    <span>PayPal</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => window.open('https://ko-fi.com/yourusername', '_blank')}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                                                >
+                                                    <span className="text-lg">☕</span>
+                                                    <span>Ko-fi</span>
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Your support helps keep TimePilot free and enables new features!
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <button
+                                            onClick={() => setShowHelpModal(false)}
+                                            className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            Got it!
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* GCash Donation Modal */}
+                {showGCashModal && (
+                    <div 
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowGCashModal(false)}
+                    >
+                        <div 
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
+                                        <span className="text-2xl">📱</span>
+                                        <span>Support via GCash</span>
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowGCashModal(false)}
+                                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {/* Motivational Message */}
+                                    <div className="text-center space-y-2">
+                                        <div className="text-3xl mb-1">🚀</div>
+                                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                                            Help TimePilot Soar Higher!
+                                        </h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Your support helps keep TimePilot free and enables amazing new features for everyone.
+                                        </p>
+                                    </div>
+
+                                    {/* GCash QR Code Display */}
+                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
+                                        <div className="text-center space-y-2">
+                                            <div className="flex items-center justify-center space-x-2">
+                                                <span className="text-lg">📱</span>
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Scan GCash QR Code</span>
+                                            </div>
+                                            <div className="bg-white dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                                                <img 
+                                                    src="/gcash-qr.png" 
+                                                    alt="GCash QR Code" 
+                                                    className="w-40 h-40 mx-auto rounded-lg shadow-lg"
+                                                    style={{ 
+                                                        maxWidth: '100%', 
+                                                        height: 'auto',
+                                                        objectFit: 'contain'
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                Open GCash app → Scan QR → Send any amount
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Suggested Amounts */}
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
+                                            Suggested Amounts (Any amount is appreciated!)
+                                        </h4>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { amount: '₱50', emoji: '☕', desc: 'Coffee' },
+                                                { amount: '₱100', emoji: '🍕', desc: 'Pizza' },
+                                                { amount: '₱200', emoji: '🎉', desc: 'Party' }
+                                            ].map((item, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-600 transition-colors cursor-pointer"
+                                                    onClick={() => {
+                                                        // Show success message for QR scan
+                                                        setNotificationMessage(`✅ Scan the QR code above with GCash app → Send ${item.amount} for ${item.desc} 🚀`);
+                                                        setShowGCashModal(false);
+                                                    }}
+                                                >
+                                                    <div className="text-lg mb-1">{item.emoji}</div>
+                                                    <div className="text-sm font-semibold text-gray-800 dark:text-white">{item.amount}</div>
+                                                    <div className="text-xs text-gray-600 dark:text-gray-400">{item.desc}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Benefits List */}
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Your support enables:
+                                        </h4>
+                                        <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-green-500">✓</span>
+                                                <span>New features and improvements</span>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-green-500">✓</span>
+                                                <span>Keep TimePilot free for everyone</span>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-green-500">✓</span>
+                                                <span>Better performance and reliability</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Thank You Message */}
+                                    <div className="text-center pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            Thank you for supporting TimePilot! 🙏
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Interactive Tutorial */}
                 {showInteractiveTutorial && (

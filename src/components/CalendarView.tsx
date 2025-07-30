@@ -547,14 +547,19 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       let statusIndicator = '';
       let duration = '';
       
-      // Calculate duration
-      const durationHours = moment(event.end).diff(moment(event.start), 'hours', true);
-      const durationMinutes = moment(event.end).diff(moment(event.start), 'minutes', true);
+      // Calculate duration more accurately
+      const durationMs = moment(event.end).diff(moment(event.start));
+      const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+      const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
       
       if (durationHours >= 1) {
-        duration = `(${Math.round(durationHours)}h)`;
+        if (durationMinutes > 0) {
+          duration = `(${durationHours}h ${durationMinutes}m)`;
+        } else {
+          duration = `(${durationHours}h)`;
+        }
       } else {
-        duration = `(${Math.round(durationMinutes)}m)`;
+        duration = `(${durationMinutes}m)`;
       }
       
       if (event.resource.type === 'study') {
@@ -864,6 +869,41 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         
         .dark .rbc-time-header-content {
           border-bottom: 2px solid #27272a !important;
+        }
+        
+        /* Darker styling for past days */
+        .rbc-day-bg.rbc-off-range {
+          background-color: #f8f9fa !important;
+        }
+        
+        .rbc-day-bg.rbc-off-range.rbc-past {
+          background-color: #e9ecef !important;
+        }
+        
+        .rbc-day-bg.rbc-past {
+          background-color: #f1f3f4 !important;
+        }
+        
+        /* Dark mode past days */
+        .dark .rbc-day-bg.rbc-off-range {
+          background-color: #1f2937 !important;
+        }
+        
+        .dark .rbc-day-bg.rbc-off-range.rbc-past {
+          background-color: #111827 !important;
+        }
+        
+        .dark .rbc-day-bg.rbc-past {
+          background-color: #1e293b !important;
+        }
+        
+        /* Past time slots in time view */
+        .rbc-timeslot-group.rbc-past {
+          background-color: #f8f9fa !important;
+        }
+        
+        .dark .rbc-timeslot-group.rbc-past {
+          background-color: #1f2937 !important;
         }
       `}</style>
 

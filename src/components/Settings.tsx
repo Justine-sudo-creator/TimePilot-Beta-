@@ -582,6 +582,8 @@ const Settings: React.FC<SettingsProps> = ({
           </div>
         )}
 
+
+
         {/* Save Button */}
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
           <button
