@@ -230,13 +230,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         <select
                           value={editFormData.importance ? 'high' : 'low'}
                           onChange={(e) => setEditFormData({ ...editFormData, importance: e.target.value === 'high' })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                           <option value="low">Low Priority</option>
                           <option value="high">High Priority</option>
                         </select>
                       </div>
-                          </div>
+                            </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
@@ -246,10 +246,10 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                         value={editFormData.description || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                         rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         placeholder="Optional description..."
-                            />
-                          </div>
+                                  />
+                            </div>
 
                     {/* Warning for low-priority urgent tasks */}
                     {isLowPriorityUrgent && (
@@ -284,14 +284,14 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                       >
                         Cancel
                       </button>
+                    </div>
                   </div>
-                </div>
               ) : (
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">
                           {task.title}
                         </h3>
                         {task.importance && (
@@ -319,9 +319,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                               <span className="font-medium">📅</span>
                               <span className={`${getUrgencyColor(task.deadline)}`}>
                                 Due: {new Date(task.deadline).toLocaleDateString()}
-                          </span>
+                            </span>
                             </div>
-                        )}
+                          )}
                           
                         {task.category && (
                             <div className="flex items-center space-x-2">
@@ -329,36 +329,43 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                             {task.category}
                           </span>
                             </div>
-                        )}
+                          )}
                           
-                      {task.description && (
+                        {task.description && (
                             <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                          {task.description}
-                        </p>
-                      )}
+                            {task.description}
+                          </p>
+                          )}
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
+                      <button
+                        onClick={() => onUpdateTask(task.id, { status: 'completed' })}
+                        className="p-2 text-green-500 hover:text-green-700 hover:bg-green-100 rounded-lg transition-colors dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900"
+                        title="Mark as completed"
+                      >
+                        <CheckCircle2 size={16} />
+                      </button>
                         <button
                           onClick={() => startEditing(task)}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
                           title="Edit task"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => onDeleteTask(task.id)}
-                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900"
                           title="Delete task"
                         >
                           <Trash2 size={16} />
                         </button>
+                      </div>
                     </div>
                   </div>
-                </div>
               )}
-            </div>
+              </div>
             ))}
           </div>
         )}
@@ -419,8 +426,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                             <span className="font-medium">📅</span>
                             <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
                           </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
@@ -431,9 +438,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, 
                     >
                         <Trash2 size={16} />
                     </button>
+                    </div>
                   </div>
                 </div>
-              </div>
             ))}
           </div>
           )}

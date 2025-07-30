@@ -515,7 +515,6 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
           commitment={selectedSessionToManage.commitment}
           targetDate={selectedSessionToManage.date}
           onDeleteSession={handleDeleteCommitmentSession}
-          onEditSession={handleEditCommitmentSession}
           onCancel={handleCancelSessionManager}
         />
       )}

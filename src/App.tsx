@@ -1957,8 +1957,7 @@ function App() {
                                             </summary>
                                             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    TimePilot analyzes your fixed commitments, energy patterns, and task priorities to find optimal time slots. 
-                                                    It learns from your completion rates to improve future estimates and automatically reschedules missed sessions.
+                                                TimePilot intelligently creates your study schedule by taking your tasks (with deadlines, estimated hours, and priorities) and your fixed commitments (classes, work, appointments), then automatically finding available time slots that don't conflict with your commitments. The system prioritizes important and urgent tasks first, distributes study hours across your available days until the deadline of the tasks using either Even mode (balanced distribution) or Eisenhower mode (deadline-focused front-loading), and respects your preferences like daily study limits, work days, and minimum session lengths.
                                                 </p>
                                             </div>
                                         </details>
@@ -1972,8 +1971,7 @@ function App() {
                                             </summary>
                                             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    The app intelligently reschedules missed sessions to available time slots. 
-                                                    It learns from your patterns to suggest better times in the future and adjusts your schedule accordingly.
+                                                When you miss a session or need to reschedule, it automatically redistributes those hours to other available time slots while maintaining deadline compliance. The result is a realistic, conflict-free daily schedule that shows exactly when to study what, eliminating the guesswork of manual planning and ensuring you never accidentally schedule study time over existing commitments.
                                                 </p>
                                             </div>
                                         </details>
