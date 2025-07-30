@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2, Menu, X, HelpCircle } from 'lucide-react';
 import { Task, StudyPlan, UserSettings, FixedCommitment, StudySession, TimerState } from './types';
-import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback } from './utils/scheduling';
+import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback, checkCommitmentConflicts } from './utils/scheduling';
 
 import Dashboard from './components/Dashboard';
 import TaskInput from './components/TaskInput';
@@ -43,7 +43,21 @@ function App() {
         const saved = localStorage.getItem('timepilot-commitments');
         try {
             const parsed = saved ? JSON.parse(saved) : [];
-            return Array.isArray(parsed) ? parsed : [];
+            if (Array.isArray(parsed)) {
+                // Migrate existing commitments to include recurring field
+                return parsed.map((commitment: any) => {
+                    if (commitment.recurring === undefined) {
+                        // Legacy commitment - assume it's recurring and migrate
+                        return {
+                            ...commitment,
+                            recurring: true,
+                            specificDates: commitment.specificDates || []
+                        };
+                    }
+                    return commitment;
+                });
+            }
+            return [];
         } catch {
             return [];
         }
@@ -491,7 +505,46 @@ function App() {
             id: Date.now().toString(),
             createdAt: new Date().toISOString()
         };
-        const updatedCommitments = [...fixedCommitments, newCommitment];
+        // Handle override logic for commitments
+        let updatedCommitments = [...fixedCommitments];
+        
+        if (!newCommitment.recurring && newCommitment.specificDates) {
+            // For one-time commitments, check if they conflict with recurring commitments
+            const conflicts = checkCommitmentConflicts(newCommitment, fixedCommitments);
+            
+            if (conflicts.hasConflict && conflicts.conflictType === 'override' && conflicts.conflictingCommitment) {
+                // Add the conflicting dates to the recurring commitment's deletedOccurrences
+                const conflictingCommitment = conflicts.conflictingCommitment;
+                const updatedConflictingCommitment = {
+                    ...conflictingCommitment,
+                    deletedOccurrences: [
+                        ...(conflictingCommitment.deletedOccurrences || []),
+                        ...(conflicts.conflictingDates || [])
+                    ]
+                };
+                
+                // Update the conflicting commitment
+                updatedCommitments = updatedCommitments.map(commitment => 
+                    commitment.id === conflictingCommitment.id 
+                        ? updatedConflictingCommitment 
+                        : commitment
+                );
+            }
+        } else if (newCommitment.recurring && newCommitment.daysOfWeek) {
+            // For recurring commitments, check if they conflict with one-time commitments
+            const conflicts = checkCommitmentConflicts(newCommitment, fixedCommitments);
+            
+            if (conflicts.hasConflict && conflicts.conflictType === 'override' && conflicts.conflictingDates) {
+                // Add the conflicting dates to the new recurring commitment's deletedOccurrences
+                newCommitment.deletedOccurrences = [
+                    ...(newCommitment.deletedOccurrences || []),
+                    ...conflicts.conflictingDates
+                ];
+            }
+        }
+        
+        // Add the new commitment
+        updatedCommitments = [...updatedCommitments, newCommitment];
         setFixedCommitments(updatedCommitments);
         
         // Regenerate study plan with new commitment
@@ -579,9 +632,60 @@ function App() {
     };
 
     const handleUpdateFixedCommitment = (commitmentId: string, updates: Partial<FixedCommitment>) => {
-        const updatedCommitments = fixedCommitments.map(commitment =>
+        // First, update the commitment
+        let updatedCommitments = fixedCommitments.map(commitment =>
             commitment.id === commitmentId ? { ...commitment, ...updates } : commitment
         );
+        
+        // Handle override logic for commitments
+        const updatedCommitment = updatedCommitments.find(c => c.id === commitmentId);
+        if (updatedCommitment) {
+            if (!updatedCommitment.recurring && updatedCommitment.specificDates) {
+                // For one-time commitments, check if they conflict with recurring commitments
+                const conflicts = checkCommitmentConflicts(updatedCommitment, fixedCommitments, commitmentId);
+                
+                if (conflicts.hasConflict && conflicts.conflictType === 'override' && conflicts.conflictingCommitment) {
+                    // Add the conflicting dates to the recurring commitment's deletedOccurrences
+                    const conflictingCommitment = conflicts.conflictingCommitment;
+                    const updatedConflictingCommitment = {
+                        ...conflictingCommitment,
+                        deletedOccurrences: [
+                            ...(conflictingCommitment.deletedOccurrences || []),
+                            ...(conflicts.conflictingDates || [])
+                        ]
+                    };
+                    
+                    // Update the conflicting commitment
+                    updatedCommitments = updatedCommitments.map(commitment => 
+                        commitment.id === conflictingCommitment.id 
+                            ? updatedConflictingCommitment 
+                            : commitment
+                    );
+                }
+            } else if (updatedCommitment.recurring && updatedCommitment.daysOfWeek) {
+                // For recurring commitments, check if they conflict with one-time commitments
+                const conflicts = checkCommitmentConflicts(updatedCommitment, fixedCommitments, commitmentId);
+                
+                if (conflicts.hasConflict && conflicts.conflictType === 'override' && conflicts.conflictingDates) {
+                    // Add the conflicting dates to the updated recurring commitment's deletedOccurrences
+                    const updatedCommitmentWithDeletedOccurrences = {
+                        ...updatedCommitment,
+                        deletedOccurrences: [
+                            ...(updatedCommitment.deletedOccurrences || []),
+                            ...conflicts.conflictingDates
+                        ]
+                    };
+                    
+                    // Update the commitment being edited
+                    updatedCommitments = updatedCommitments.map(commitment => 
+                        commitment.id === commitmentId 
+                            ? updatedCommitmentWithDeletedOccurrences 
+                            : commitment
+                    );
+                }
+            }
+        }
+        
         setFixedCommitments(updatedCommitments);
         
         // Regenerate study plan with updated commitments

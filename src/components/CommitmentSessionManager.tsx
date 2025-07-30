@@ -229,20 +229,6 @@ const CommitmentSessionManager: React.FC<CommitmentSessionManagerProps> = ({
         </div>
 
         <div className="flex justify-end space-x-3 mt-6">
-          <button
-            onClick={handleEdit}
-            className="flex items-center space-x-2 px-4 py-2 text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-blue-900"
-          >
-            <Edit size={16} />
-            <span>Edit</span>
-          </button>
-          <button
-            onClick={handleDelete}
-            className="flex items-center space-x-2 px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900"
-          >
-            <Trash2 size={16} />
-            <span>Delete</span>
-          </button>
         </div>
       </div>
     </div>

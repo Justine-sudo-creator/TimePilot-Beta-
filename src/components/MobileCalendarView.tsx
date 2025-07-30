@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Clock, BookOpen, Settings, X, Play, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, BookOpen, X, Play, Trash2 } from 'lucide-react';
 import { StudyPlan, FixedCommitment, Task } from '../types';
 import { checkSessionStatus, formatTime } from '../utils/scheduling';
 import moment from 'moment';
@@ -71,9 +71,22 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
       selectedPlan.plannedTasks.forEach(session => {
         const task = tasks.find(t => t.id === session.taskId);
         if (task) {
-          const startTime = moment(selectedDate).add(moment(session.startTime, 'HH:mm'));
-          const endTime = moment(selectedDate).add(moment(session.endTime, 'HH:mm'));
-          
+          // Parse session start and end times as moments on the selected date
+          const startTime = moment(selectedDate)
+            .set({
+              hour: parseInt(session.startTime.split(':')[0], 10),
+              minute: parseInt(session.startTime.split(':')[1], 10),
+              second: 0,
+              millisecond: 0
+            });
+          const endTime = moment(selectedDate)
+            .set({
+              hour: parseInt(session.endTime.split(':')[0], 10),
+              minute: parseInt(session.endTime.split(':')[1], 10),
+              second: 0,
+              millisecond: 0
+            });
+
           events.push({
             id: `${session.taskId}-${session.sessionNumber}`,
             title: `${task.title} (Session ${session.sessionNumber})`,
@@ -91,7 +104,17 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
     // Add fixed commitments with support for deleted and modified occurrences
     const dayOfWeek = selectedDate.getDay();
     fixedCommitments.forEach(commitment => {
-      if (commitment.daysOfWeek.includes(dayOfWeek)) {
+      let shouldInclude = false;
+      
+      if (commitment.recurring) {
+        // For recurring commitments, check if the day of week matches
+        shouldInclude = commitment.daysOfWeek.includes(dayOfWeek);
+      } else {
+        // For non-recurring commitments, check if the specific date matches
+        shouldInclude = commitment.specificDates?.includes(selectedDateStr) || false;
+      }
+      
+      if (shouldInclude) {
         const dateString = selectedDateStr;
         
         // Skip deleted occurrences

@@ -153,7 +153,9 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
         title: item.session.taskId + ' (Manual Resched)',
         startTime: newTime,
         endTime: newTime, // This will be calculated properly in the parent handler
-        daysOfWeek: [new Date(newDate).getDay()],
+        recurring: false,
+        daysOfWeek: [],
+        specificDates: [newDate],
         type: 'other',
         createdAt: new Date().toISOString(),
       };
@@ -398,7 +400,9 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
                       title: reschedModal.task.title + ' (Manual Resched)',
                       startTime: reschedStartTime,
                       endTime: reschedEndTime,
-                      daysOfWeek: [reschedDayOfWeek],
+                      recurring: false,
+                      daysOfWeek: [],
+                      specificDates: [reschedDate],
                       type: 'other',
                       createdAt: new Date().toISOString(),
                     };

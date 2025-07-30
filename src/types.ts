@@ -92,7 +92,9 @@ export interface FixedCommitment {
   title: string;
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
-  daysOfWeek: number[]; // 0 = Sunday, 1 = Monday, etc.
+  recurring: boolean; // true for recurring, false for one-time
+  daysOfWeek: number[]; // 0 = Sunday, 1 = Monday, etc. (for recurring commitments)
+  specificDates?: string[]; // Array of date strings (YYYY-MM-DD) for non-recurring commitments
   type: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
   location?: string;
   description?: string;

@@ -592,7 +592,16 @@ export const generateNewStudyPlan = (
         return new Date(taskA.deadline).getTime() - new Date(taskB.deadline).getTime();
       });
       // Assign time slots for each session, ensuring no overlap with commitments or other sessions
-      const commitmentsForDay = fixedCommitments.filter(c => c.daysOfWeek.includes(new Date(plan.date).getDay()));
+      const commitmentsForDay = fixedCommitments.filter(commitment => {
+        // Check if this commitment applies to this specific date
+        if (commitment.recurring) {
+          // For recurring commitments, check if the day of week matches
+          return commitment.daysOfWeek.includes(new Date(plan.date).getDay());
+        } else {
+          // For non-recurring commitments, check if the specific date matches
+          return commitment.specificDates?.includes(plan.date) || false;
+        }
+      });
       let assignedSessions: StudySession[] = [];
       for (const session of plan.plannedTasks) {
         const slot = findNextAvailableTimeSlot(
@@ -735,7 +744,16 @@ export const generateNewStudyPlan = (
     let dayPlan = studyPlans.find(p => p.date === date)!;
     let availableHours = dailyRemainingHours[date];
     // Get all fixed commitments for this day
-    const commitmentsForDay = fixedCommitments.filter(c => c.daysOfWeek.includes(new Date(date).getDay()));
+            const commitmentsForDay = fixedCommitments.filter(commitment => {
+          // Check if this commitment applies to this specific date
+          if (commitment.recurring) {
+            // For recurring commitments, check if the day of week matches
+            return commitment.daysOfWeek.includes(new Date(date).getDay());
+          } else {
+            // For non-recurring commitments, check if the specific date matches
+            return commitment.specificDates?.includes(date) || false;
+          }
+        });
     // Get tasks that still need hours and are not past their deadline (using same logic as even mode)
     const tasksForDay = tasksSorted.filter(task => {
       const deadline = new Date(task.deadline);
@@ -938,10 +956,20 @@ export const getDailyAvailableTimeSlots = (
   const dateString = date.toISOString().split('T')[0];
   
   // Filter commitments for this day, excluding deleted occurrences
-  const dayCommitments = commitments.filter(commitment => 
-    commitment.daysOfWeek.includes(dayOfWeek) && 
-    !commitment.deletedOccurrences?.includes(dateString)
-  );
+  const dayCommitments = commitments.filter(commitment => {
+    // Check if this commitment applies to this specific date
+    let appliesToDate = false;
+    
+    if (commitment.recurring) {
+      // For recurring commitments, check if the day of week matches
+      appliesToDate = commitment.daysOfWeek.includes(dayOfWeek);
+    } else {
+      // For non-recurring commitments, check if the specific date matches
+      appliesToDate = commitment.specificDates?.includes(dateString) || false;
+    }
+    
+    return appliesToDate && !commitment.deletedOccurrences?.includes(dateString);
+  });
   
   // Create time slots around commitments
   let currentTime = new Date(date);
@@ -1111,9 +1139,16 @@ export const moveMissedSessions = (
     
     // Add commitments for this day
     const dayOfWeek = date.getDay();
-    const dayCommitments = fixedCommitments.filter(commitment => 
-      commitment.daysOfWeek.includes(dayOfWeek)
-    );
+    const dayCommitments = fixedCommitments.filter(commitment => {
+      // Check if this commitment applies to this specific date
+      if (commitment.recurring) {
+        // For recurring commitments, check if the day of week matches
+        return commitment.daysOfWeek.includes(dayOfWeek);
+      } else {
+        // For non-recurring commitments, check if the specific date matches
+        return commitment.specificDates?.includes(dateString) || false;
+      }
+    });
     
     dayCommitments.forEach(commitment => {
       const commitmentStart = new Date(date);
@@ -1989,7 +2024,16 @@ export const redistributeAfterTaskDeletion = (
       return new Date(taskA.deadline).getTime() - new Date(taskB.deadline).getTime();
     });
     
-    const commitmentsForDay = fixedCommitments.filter(c => c.daysOfWeek.includes(new Date(plan.date).getDay()));
+            const commitmentsForDay = fixedCommitments.filter(commitment => {
+          // Check if this commitment applies to this specific date
+          if (commitment.recurring) {
+            // For recurring commitments, check if the day of week matches
+            return commitment.daysOfWeek.includes(new Date(plan.date).getDay());
+          } else {
+            // For non-recurring commitments, check if the specific date matches
+            return commitment.specificDates?.includes(plan.date) || false;
+          }
+        });
     let assignedSessions: StudySession[] = [];
     
     for (const session of plan.plannedTasks) {
@@ -2021,11 +2065,18 @@ export const checkCommitmentConflicts = (
   newCommitment: {
     startTime: string;
     endTime: string;
+    recurring: boolean;
     daysOfWeek: number[];
+    specificDates?: string[];
   },
   existingCommitments: FixedCommitment[],
   excludeCommitmentId?: string // For editing, exclude the commitment being edited
-): { hasConflict: boolean; conflictingCommitment?: FixedCommitment } => {
+): { 
+  hasConflict: boolean; 
+  conflictingCommitment?: FixedCommitment;
+  conflictType?: 'strict' | 'override';
+  conflictingDates?: string[];
+} => {
   // Convert time strings to minutes for easier comparison
   const timeToMinutes = (timeStr: string): number => {
     const [hours, minutes] = timeStr.split(':').map(Number);
@@ -2042,27 +2093,113 @@ export const checkCommitmentConflicts = (
       continue;
     }
 
-    // Check if there are overlapping days
-    const hasOverlappingDays = newCommitment.daysOfWeek.some(day => 
-      existing.daysOfWeek.includes(day)
-    );
+    let hasConflict = false;
+    let conflictType: 'strict' | 'override' = 'strict';
+    let conflictingDates: string[] = [];
 
-    if (hasOverlappingDays) {
-      const existingStartMinutes = timeToMinutes(existing.startTime);
-      const existingEndMinutes = timeToMinutes(existing.endTime);
-
-      // Check for time overlap
-      const hasTimeOverlap = !(
-        newEndMinutes <= existingStartMinutes || 
-        newStartMinutes >= existingEndMinutes
+    if (newCommitment.recurring && existing.recurring) {
+      // Both are recurring - STRICT conflict (same type)
+      const hasOverlappingDays = newCommitment.daysOfWeek.some(day => 
+        existing.daysOfWeek.includes(day)
       );
 
-      if (hasTimeOverlap) {
-        return {
-          hasConflict: true,
-          conflictingCommitment: existing
-        };
+      if (hasOverlappingDays) {
+        const existingStartMinutes = timeToMinutes(existing.startTime);
+        const existingEndMinutes = timeToMinutes(existing.endTime);
+
+        // Check for time overlap
+        const hasTimeOverlap = !(
+          newEndMinutes <= existingStartMinutes || 
+          newStartMinutes >= existingEndMinutes
+        );
+
+        if (hasTimeOverlap) {
+          hasConflict = true;
+          conflictType = 'strict';
+        }
       }
+    } else if (!newCommitment.recurring && !existing.recurring) {
+      // Both are non-recurring - STRICT conflict (same type)
+      const hasOverlappingDates = newCommitment.specificDates?.some(date => 
+        existing.specificDates?.includes(date)
+      );
+
+      if (hasOverlappingDates) {
+        const existingStartMinutes = timeToMinutes(existing.startTime);
+        const existingEndMinutes = timeToMinutes(existing.endTime);
+
+        // Check for time overlap
+        const hasTimeOverlap = !(
+          newEndMinutes <= existingStartMinutes || 
+          newStartMinutes >= existingEndMinutes
+        );
+
+        if (hasTimeOverlap) {
+          hasConflict = true;
+          conflictType = 'strict';
+          conflictingDates = newCommitment.specificDates?.filter(date => 
+            existing.specificDates?.includes(date)
+          ) || [];
+        }
+      }
+    } else {
+      // One is recurring, one is non-recurring
+      if (newCommitment.recurring && !existing.recurring) {
+        // New is recurring, existing is non-recurring - OVERRIDE (one-time takes priority)
+        const overlappingDates = existing.specificDates?.filter(date => {
+          const dayOfWeek = new Date(date).getDay();
+          return newCommitment.daysOfWeek.includes(dayOfWeek);
+        }) || [];
+
+        if (overlappingDates.length > 0) {
+          const existingStartMinutes = timeToMinutes(existing.startTime);
+          const existingEndMinutes = timeToMinutes(existing.endTime);
+
+          // Check for time overlap
+          const hasTimeOverlap = !(
+            newEndMinutes <= existingStartMinutes || 
+            newStartMinutes >= existingEndMinutes
+          );
+
+          if (hasTimeOverlap) {
+            hasConflict = true;
+            conflictType = 'override';
+            conflictingDates = overlappingDates;
+          }
+        }
+      } else {
+        // New is non-recurring, existing is recurring - OVERRIDE (one-time takes priority)
+        const overlappingDates = newCommitment.specificDates?.filter(date => {
+          const dayOfWeek = new Date(date).getDay();
+          return existing.daysOfWeek.includes(dayOfWeek);
+        }) || [];
+
+        if (overlappingDates.length > 0) {
+          const existingStartMinutes = timeToMinutes(existing.startTime);
+          const existingEndMinutes = timeToMinutes(existing.endTime);
+
+          // Check for time overlap
+          const hasTimeOverlap = !(
+            newEndMinutes <= existingStartMinutes || 
+            newStartMinutes >= existingEndMinutes
+          );
+
+          if (hasTimeOverlap) {
+            hasConflict = true;
+            conflictType = 'override';
+            conflictingDates = overlappingDates;
+          }
+        }
+      }
+    }
+
+    if (hasConflict) {
+      return {
+        hasConflict: true,
+        conflictingCommitment: existing,
+        conflictType,
+        conflictingDates
+      };
     }
   }
 

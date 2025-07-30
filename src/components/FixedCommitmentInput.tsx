@@ -14,7 +14,9 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
     title: '',
     startTime: '',
     endTime: '',
+    recurring: true,
     daysOfWeek: [] as number[],
+    specificDates: [] as string[],
     type: 'class' as const,
     location: '',
     description: ''
@@ -26,13 +28,14 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
   const isTitleLengthValid = formData.title.trim().length <= 100;
   const isStartTimeValid = formData.startTime.trim().length > 0;
   const isEndTimeValid = formData.endTime.trim().length > 0;
-  const isDaysValid = formData.daysOfWeek.length > 0;
+  const isDaysValid = formData.recurring ? formData.daysOfWeek.length > 0 : true;
+  const isDatesValid = !formData.recurring ? formData.specificDates.length > 0 : true;
   const isTimeRangeValid = formData.startTime && formData.endTime ? 
     formData.startTime < formData.endTime : true;
   const isLocationValid = !formData.location || formData.location.trim().length <= 200;
 
   const isFormValid = isTitleValid && isTitleLengthValid && isStartTimeValid && 
-                     isEndTimeValid && isDaysValid && isTimeRangeValid && isLocationValid;
+                     isEndTimeValid && isDaysValid && isDatesValid && isTimeRangeValid && isLocationValid;
 
 
 
@@ -59,12 +62,36 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
     if (conflictCheck.hasConflict) {
       const conflictingCommitment = conflictCheck.conflictingCommitment!;
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const conflictingDays = conflictingCommitment.daysOfWeek.map(day => dayNames[day]).join(', ');
+      let conflictDescription = '';
       
-      setConflictError(
-        `Time conflict with "${conflictingCommitment.title}" (${conflictingDays}, ${conflictingCommitment.startTime}-${conflictingCommitment.endTime}). Please adjust your schedule.`
-      );
-      return;
+      if (conflictingCommitment.recurring) {
+        const conflictingDays = conflictingCommitment.daysOfWeek.map(day => dayNames[day]).join(', ');
+        conflictDescription = `(${conflictingDays}, ${conflictingCommitment.startTime}-${conflictingCommitment.endTime})`;
+      } else {
+        const conflictingDates = conflictingCommitment.specificDates?.map(date => new Date(date).toLocaleDateString()).join(', ') || '';
+        conflictDescription = `(${conflictingDates}, ${conflictingCommitment.startTime}-${conflictingCommitment.endTime})`;
+      }
+      
+      if (conflictCheck.conflictType === 'strict') {
+        setConflictError(
+          `Time conflict with "${conflictingCommitment.title}" ${conflictDescription}. Please adjust your schedule.`
+        );
+        return;
+      } else if (conflictCheck.conflictType === 'override') {
+        // For override conflicts, show a different message
+        if (!formData.recurring) {
+          setConflictError(
+            `This one-time commitment will override the recurring commitment "${conflictingCommitment.title}" on the selected dates.`
+          );
+          // Don't return - allow the override to proceed
+        } else {
+          const conflictingDates = conflictCheck.conflictingDates?.map(date => new Date(date).toLocaleDateString()).join(', ') || '';
+          setConflictError(
+            `This recurring commitment conflicts with one-time commitments on: ${conflictingDates}. These dates will be excluded from the recurring schedule.`
+          );
+          // Don't return - allow the override to proceed
+        }
+      }
     }
 
     // Clear any previous conflict errors
@@ -75,7 +102,9 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
       title: '',
       startTime: '',
       endTime: '',
+      recurring: true,
       daysOfWeek: [],
+      specificDates: [],
       type: 'class',
       location: '',
       description: ''
@@ -145,10 +174,40 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
                   <option value="other">Other</option>
                 </select>
               </div>
+                      </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">
+              Commitment Type
+            </label>
+            <div className="flex space-x-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="recurring"
+                  checked={formData.recurring}
+                  onChange={() => setFormData({ ...formData, recurring: true, specificDates: [] })}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-200">Recurring</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="recurring"
+                  checked={!formData.recurring}
+                  onChange={() => setFormData({ ...formData, recurring: false, daysOfWeek: [] })}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-200">One-time</span>
+              </label>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">
                 Start Time
@@ -182,6 +241,7 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
             </div>
           </div>
 
+                  {formData.recurring ? (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-200">
               Days of Week
@@ -203,6 +263,53 @@ const FixedCommitmentInput: React.FC<FixedCommitmentInputProps> = ({ onAddCommit
               ))}
             </div>
           </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-200">
+              Specific Dates
+            </label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !formData.specificDates.includes(e.target.value)) {
+                      setFormData({
+                        ...formData,
+                        specificDates: [...formData.specificDates, e.target.value].sort()
+                      });
+                    }
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Add date</span>
+              </div>
+              {formData.specificDates.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.specificDates.map((date) => (
+                    <div
+                      key={date}
+                      className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-lg dark:bg-blue-900/20 dark:text-blue-300"
+                    >
+                      <span className="text-sm">{new Date(date).toLocaleDateString()}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({
+                          ...formData,
+                          specificDates: formData.specificDates.filter(d => d !== date)
+                        })}
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
           <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">

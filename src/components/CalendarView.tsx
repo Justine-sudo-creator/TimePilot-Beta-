@@ -291,20 +291,64 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
     // Convert fixed commitments to calendar events
     fixedCommitments.forEach(commitment => {
-      const today = new Date();
-      // Extend the range to 365 days (1 year) to prevent days from getting cut off
-      const endDate = new Date();
-      endDate.setDate(today.getDate() + 365);
-      const currentDate = new Date(today);
-      while (currentDate <= endDate) {
-        if (commitment.daysOfWeek.includes(currentDate.getDay())) {
-          const dateString = currentDate.toISOString().split('T')[0];
-          
+      if (commitment.recurring) {
+        // Handle recurring commitments
+        const today = new Date();
+        // Extend the range to 365 days (1 year) to prevent days from getting cut off
+        const endDate = new Date();
+        endDate.setDate(today.getDate() + 365);
+        const currentDate = new Date(today);
+        while (currentDate <= endDate) {
+          if (commitment.daysOfWeek.includes(currentDate.getDay())) {
+            const dateString = currentDate.toISOString().split('T')[0];
+            
+            // Skip deleted occurrences
+            if (commitment.deletedOccurrences?.includes(dateString)) {
+              currentDate.setDate(currentDate.getDate() + 1);
+              continue;
+            }
+            
+            // Check for modified occurrence
+            const modifiedSession = commitment.modifiedOccurrences?.[dateString];
+            
+            const startDateTime = new Date(currentDate);
+            const [startHour, startMinute] = (modifiedSession?.startTime || commitment.startTime).split(':').map(Number);
+            startDateTime.setHours(startHour, startMinute, 0, 0);
+            const endDateTime = new Date(currentDate);
+            const [endHour, endMinute] = (modifiedSession?.endTime || commitment.endTime).split(':').map(Number);
+            endDateTime.setHours(endHour, endMinute, 0, 0);
+            
+            // Split if crosses midnight
+            splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
+              calendarEvents.push({
+                id: `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${idx}`,
+                title: modifiedSession?.title || commitment.title,
+                start,
+                end,
+                resource: {
+                  type: 'commitment',
+                  data: {
+                    ...commitment,
+                    title: modifiedSession?.title || commitment.title,
+                    startTime: modifiedSession?.startTime || commitment.startTime,
+                    endTime: modifiedSession?.endTime || commitment.endTime,
+                    type: modifiedSession?.type || commitment.type
+                  }
+                }
+              });
+            });
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else {
+        // Handle non-recurring commitments
+        commitment.specificDates?.forEach(dateString => {
           // Skip deleted occurrences
           if (commitment.deletedOccurrences?.includes(dateString)) {
-            currentDate.setDate(currentDate.getDate() + 1);
-            continue;
+            return;
           }
+          
+          const currentDate = new Date(dateString);
           
           // Check for modified occurrence
           const modifiedSession = commitment.modifiedOccurrences?.[dateString];
@@ -319,7 +363,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           // Split if crosses midnight
           splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
             calendarEvents.push({
-              id: `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${idx}`,
+              id: `commitment-${commitment.id}-${dateString}-${idx}`,
               title: modifiedSession?.title || commitment.title,
               start,
               end,
@@ -335,8 +379,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
               }
             });
           });
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
+        });
       }
     });
 
