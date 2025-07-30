@@ -125,8 +125,24 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
         // Check for modified occurrence
         const modifiedSession = commitment.modifiedOccurrences?.[dateString];
         
-        const startTime = moment(selectedDate).add(moment(modifiedSession?.startTime || commitment.startTime, 'HH:mm') as any);
-        const endTime = moment(selectedDate).add(moment(modifiedSession?.endTime || commitment.endTime, 'HH:mm') as any);
+        // Parse start and end times correctly
+        const [startHour, startMinute] = (modifiedSession?.startTime || commitment.startTime).split(':').map(Number);
+        const [endHour, endMinute] = (modifiedSession?.endTime || commitment.endTime).split(':').map(Number);
+        
+        const startTime = moment(selectedDate)
+          .set({
+            hour: startHour,
+            minute: startMinute,
+            second: 0,
+            millisecond: 0
+          });
+        const endTime = moment(selectedDate)
+          .set({
+            hour: endHour,
+            minute: endMinute,
+            second: 0,
+            millisecond: 0
+          });
         
         events.push({
           id: commitment.id,
