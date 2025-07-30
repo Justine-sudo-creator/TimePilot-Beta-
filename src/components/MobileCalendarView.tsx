@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Clock, BookOpen, Settings, X, Play, Trash2 }
 import { StudyPlan, FixedCommitment, Task } from '../types';
 import { checkSessionStatus, formatTime } from '../utils/scheduling';
 import moment from 'moment';
+import CommitmentSessionManager from './CommitmentSessionManager';
 
 interface MobileCalendarViewProps {
   studyPlans: StudyPlan[];
@@ -11,6 +12,13 @@ interface MobileCalendarViewProps {
   onSelectTask?: (task: Task, session?: { allocatedHours: number; planDate?: string; sessionNumber?: number }) => void;
   onStartManualSession?: (commitment: FixedCommitment, durationSeconds: number) => void;
   onDeleteFixedCommitment?: (commitmentId: string) => void;
+  onDeleteCommitmentSession?: (commitmentId: string, date: string) => void;
+  onEditCommitmentSession?: (commitmentId: string, date: string, updates: {
+    startTime?: string;
+    endTime?: string;
+    title?: string;
+    type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
+  }) => void;
 }
 
 interface CalendarEvent {
@@ -31,9 +39,16 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
   onSelectTask,
   onStartManualSession,
   onDeleteFixedCommitment,
+  onDeleteCommitmentSession,
+  onEditCommitmentSession,
 }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showSessionManager, setShowSessionManager] = useState(false);
+  const [selectedSessionToManage, setSelectedSessionToManage] = useState<{
+    commitment: FixedCommitment;
+    date: string;
+  } | null>(null);
 
   // Generate dates for the horizontal picker (7 days around selected date)
   const dateRange = useMemo(() => {
@@ -73,21 +88,37 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
       });
     }
 
-    // Add fixed commitments
+    // Add fixed commitments with support for deleted and modified occurrences
     const dayOfWeek = selectedDate.getDay();
     fixedCommitments.forEach(commitment => {
       if (commitment.daysOfWeek.includes(dayOfWeek)) {
-        const startTime = moment(selectedDate).add(moment(commitment.startTime, 'HH:mm'));
-        const endTime = moment(selectedDate).add(moment(commitment.endTime, 'HH:mm'));
+        const dateString = selectedDateStr;
+        
+        // Skip deleted occurrences
+        if (commitment.deletedOccurrences?.includes(dateString)) {
+          return;
+        }
+
+        // Check for modified occurrence
+        const modifiedSession = commitment.modifiedOccurrences?.[dateString];
+        
+        const startTime = moment(selectedDate).add(moment(modifiedSession?.startTime || commitment.startTime, 'HH:mm') as any);
+        const endTime = moment(selectedDate).add(moment(modifiedSession?.endTime || commitment.endTime, 'HH:mm') as any);
         
         events.push({
           id: commitment.id,
-          title: commitment.title,
+          title: modifiedSession?.title || commitment.title,
           start: startTime.toDate(),
           end: endTime.toDate(),
           resource: {
             type: 'commitment',
-            data: commitment
+            data: {
+              ...commitment,
+              title: modifiedSession?.title || commitment.title,
+              startTime: modifiedSession?.startTime || commitment.startTime,
+              endTime: modifiedSession?.endTime || commitment.endTime,
+              type: modifiedSession?.type || commitment.type
+            }
           }
         });
       }
@@ -143,7 +174,24 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
   };
 
   const handleEventClick = (event: CalendarEvent) => {
-    setSelectedEvent(event);
+    if (event.resource.type === 'commitment') {
+      // For commitments, open the session manager instead of the simple modal
+      const commitment = event.resource.data as FixedCommitment;
+      const dateString = moment(selectedDate).format('YYYY-MM-DD');
+      
+      // Check if this occurrence is deleted
+      if (commitment.deletedOccurrences?.includes(dateString)) {
+        return; // Don't allow interaction with deleted occurrences
+      }
+      
+      setSelectedSessionToManage({
+        commitment,
+        date: dateString
+      });
+      setShowSessionManager(true);
+    } else {
+      setSelectedEvent(event);
+    }
   };
 
   const handleStartSession = () => {
@@ -163,6 +211,32 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
       onDeleteFixedCommitment(selectedEvent.resource.data.id);
     }
     setSelectedEvent(null);
+  };
+
+  const handleDeleteCommitmentSession = (commitmentId: string, date: string) => {
+    if (onDeleteCommitmentSession) {
+      onDeleteCommitmentSession(commitmentId, date);
+    }
+    setShowSessionManager(false);
+    setSelectedSessionToManage(null);
+  };
+
+  const handleEditCommitmentSession = (commitmentId: string, date: string, updates: {
+    startTime?: string;
+    endTime?: string;
+    title?: string;
+    type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
+  }) => {
+    if (onEditCommitmentSession) {
+      onEditCommitmentSession(commitmentId, date, updates);
+    }
+    setShowSessionManager(false);
+    setSelectedSessionToManage(null);
+  };
+
+  const handleCancelSessionManager = () => {
+    setShowSessionManager(false);
+    setSelectedSessionToManage(null);
   };
 
   const formatTimeSlot = (hour: number) => {
@@ -371,6 +445,17 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Commitment Session Manager Modal */}
+      {showSessionManager && selectedSessionToManage && (
+        <CommitmentSessionManager
+          commitment={selectedSessionToManage.commitment}
+          targetDate={selectedSessionToManage.date}
+          onDeleteSession={handleDeleteCommitmentSession}
+          onEditSession={handleEditCommitmentSession}
+          onCancel={handleCancelSessionManager}
+        />
       )}
     </div>
   );

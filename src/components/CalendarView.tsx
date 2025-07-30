@@ -758,6 +758,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         onSelectTask={onSelectTask}
         onStartManualSession={onStartManualSession}
         onDeleteFixedCommitment={onDeleteFixedCommitment}
+        onDeleteCommitmentSession={onDeleteCommitmentSession}
+        onEditCommitmentSession={onEditCommitmentSession}
       />
     );
   }
