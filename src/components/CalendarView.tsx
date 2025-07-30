@@ -276,8 +276,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     // Convert fixed commitments to calendar events
     fixedCommitments.forEach(commitment => {
       const today = new Date();
+      // Extend the range to 365 days (1 year) to prevent days from getting cut off
       const endDate = new Date();
-      endDate.setDate(today.getDate() + 30);
+      endDate.setDate(today.getDate() + 365);
       const currentDate = new Date(today);
       while (currentDate <= endDate) {
         if (commitment.daysOfWeek.includes(currentDate.getDay())) {
