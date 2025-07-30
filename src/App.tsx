@@ -624,6 +624,125 @@ function App() {
         }
     };
 
+    const handleDeleteCommitmentSession = (commitmentId: string, date: string) => {
+        const updatedCommitments = fixedCommitments.map(commitment => {
+            if (commitment.id === commitmentId) {
+                const deletedOccurrences = commitment.deletedOccurrences || [];
+                if (!deletedOccurrences.includes(date)) {
+                    return {
+                        ...commitment,
+                        deletedOccurrences: [...deletedOccurrences, date]
+                    };
+                }
+            }
+            return commitment;
+        });
+        setFixedCommitments(updatedCommitments);
+        
+        // Regenerate study plan with updated commitments
+        if (tasks.length > 0) {
+            const { plans: newPlans } = generateNewStudyPlan(tasks, settings, updatedCommitments, studyPlans);
+            
+            // Preserve session status from previous plan
+            newPlans.forEach(plan => {
+                const prevPlan = studyPlans.find(p => p.date === plan.date);
+                if (!prevPlan) return;
+                
+                // Preserve session status and properties
+                plan.plannedTasks.forEach(session => {
+                    const prevSession = prevPlan.plannedTasks.find(s => s.taskId === session.taskId && s.sessionNumber === session.sessionNumber);
+                    if (prevSession) {
+                        // Preserve done sessions
+                        if (prevSession.done) {
+                            session.done = true;
+                            session.status = prevSession.status;
+                            session.actualHours = prevSession.actualHours;
+                            session.completedAt = prevSession.completedAt;
+                        }
+                        // Preserve skipped sessions
+                        else if (prevSession.status === 'skipped') {
+                            session.status = 'skipped';
+                        }
+                        // Preserve rescheduled sessions
+                        else if (prevSession.originalTime && prevSession.originalDate) {
+                            session.originalTime = prevSession.originalTime;
+                            session.originalDate = prevSession.originalDate;
+                            session.rescheduledAt = prevSession.rescheduledAt;
+                            session.isManualOverride = prevSession.isManualOverride;
+                        }
+                    }
+                });
+            });
+            
+            setStudyPlans(newPlans);
+        setLastPlanStaleReason("commitment");
+        }
+    };
+
+    const handleEditCommitmentSession = (commitmentId: string, date: string, updates: {
+        startTime?: string;
+        endTime?: string;
+        title?: string;
+        type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
+    }) => {
+        const updatedCommitments = fixedCommitments.map(commitment => {
+            if (commitment.id === commitmentId) {
+                const modifiedOccurrences = commitment.modifiedOccurrences || {};
+                return {
+                    ...commitment,
+                    modifiedOccurrences: {
+                        ...modifiedOccurrences,
+                        [date]: {
+                            ...modifiedOccurrences[date],
+                            ...updates
+                        }
+                    }
+                };
+            }
+            return commitment;
+        });
+        setFixedCommitments(updatedCommitments);
+        
+        // Regenerate study plan with updated commitments
+        if (tasks.length > 0) {
+            const { plans: newPlans } = generateNewStudyPlan(tasks, settings, updatedCommitments, studyPlans);
+            
+            // Preserve session status from previous plan
+            newPlans.forEach(plan => {
+                const prevPlan = studyPlans.find(p => p.date === plan.date);
+                if (!prevPlan) return;
+                
+                // Preserve session status and properties
+                plan.plannedTasks.forEach(session => {
+                    const prevSession = prevPlan.plannedTasks.find(s => s.taskId === session.taskId && s.sessionNumber === session.sessionNumber);
+                    if (prevSession) {
+                        // Preserve done sessions
+                        if (prevSession.done) {
+                            session.done = true;
+                            session.status = prevSession.status;
+                            session.actualHours = prevSession.actualHours;
+                            session.completedAt = prevSession.completedAt;
+                        }
+                        // Preserve skipped sessions
+                        else if (prevSession.status === 'skipped') {
+                            session.status = 'skipped';
+                        }
+                        // Preserve rescheduled sessions
+                        else if (prevSession.originalTime && prevSession.originalDate) {
+                            session.originalTime = prevSession.originalTime;
+                            session.originalDate = prevSession.originalDate;
+                            session.rescheduledAt = prevSession.rescheduledAt;
+                            session.isManualOverride = prevSession.isManualOverride;
+                        }
+                    }
+                });
+            });
+            
+            setStudyPlans(newPlans);
+        setLastPlanStaleReason("commitment");
+        }
+    };
+
     const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
         const updatedTasks = tasks.map(task =>
             task.id === taskId ? { ...task, ...updates } : task
@@ -1572,6 +1691,8 @@ function App() {
                                 setActiveTab('timer');
                             }}
                             onDeleteFixedCommitment={handleDeleteFixedCommitment}
+                            onDeleteCommitmentSession={handleDeleteCommitmentSession}
+                            onEditCommitmentSession={handleEditCommitmentSession}
                         />
                     )}
 

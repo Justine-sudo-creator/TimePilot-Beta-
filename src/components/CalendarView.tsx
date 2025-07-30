@@ -7,6 +7,7 @@ import { BookOpen, Clock, Settings, X } from 'lucide-react';
 import { checkSessionStatus } from '../utils/scheduling';
 import { getLocalDateString } from '../utils/scheduling';
 import MobileCalendarView from './MobileCalendarView';
+import CommitmentSessionManager from './CommitmentSessionManager';
 
 const localizer = momentLocalizer(moment);
 
@@ -15,8 +16,15 @@ interface CalendarViewProps {
   fixedCommitments: FixedCommitment[];
   tasks: Task[];
   onSelectTask?: (task: Task, session?: { allocatedHours: number; planDate?: string; sessionNumber?: number }) => void;
-  onStartManualSession?: (commitment: FixedCommitment, durationSeconds: number) => void; // NEW
-  onDeleteFixedCommitment?: (commitmentId: string) => void; // NEW
+  onStartManualSession?: (commitment: FixedCommitment, durationSeconds: number) => void;
+  onDeleteFixedCommitment?: (commitmentId: string) => void;
+  onDeleteCommitmentSession?: (commitmentId: string, date: string) => void;
+  onEditCommitmentSession?: (commitmentId: string, date: string, updates: {
+    startTime?: string;
+    endTime?: string;
+    title?: string;
+    type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
+  }) => void;
 }
 
 interface CalendarEvent {
@@ -108,6 +116,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   onSelectTask,
   onStartManualSession,
   onDeleteFixedCommitment,
+  onDeleteCommitmentSession,
+  onEditCommitmentSession,
 }) => {
   const [timeInterval, setTimeInterval] = useState(() => {
     const saved = localStorage.getItem('timepilot-calendar-interval');
@@ -142,6 +152,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   });
   const [selectedManualSession, setSelectedManualSession] = useState<FixedCommitment | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showSessionManager, setShowSessionManager] = useState(false);
+  const [selectedSessionToManage, setSelectedSessionToManage] = useState<{
+    commitment: FixedCommitment;
+    date: string;
+  } | null>(null);
+
 
   // Mobile detection
   useEffect(() => {
@@ -282,22 +298,40 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       const currentDate = new Date(today);
       while (currentDate <= endDate) {
         if (commitment.daysOfWeek.includes(currentDate.getDay())) {
+          const dateString = currentDate.toISOString().split('T')[0];
+          
+          // Skip deleted occurrences
+          if (commitment.deletedOccurrences?.includes(dateString)) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            continue;
+          }
+          
+          // Check for modified occurrence
+          const modifiedSession = commitment.modifiedOccurrences?.[dateString];
+          
           const startDateTime = new Date(currentDate);
-          const [startHour, startMinute] = commitment.startTime.split(':').map(Number);
+          const [startHour, startMinute] = (modifiedSession?.startTime || commitment.startTime).split(':').map(Number);
           startDateTime.setHours(startHour, startMinute, 0, 0);
           const endDateTime = new Date(currentDate);
-          const [endHour, endMinute] = commitment.endTime.split(':').map(Number);
+          const [endHour, endMinute] = (modifiedSession?.endTime || commitment.endTime).split(':').map(Number);
           endDateTime.setHours(endHour, endMinute, 0, 0);
+          
           // Split if crosses midnight
           splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
             calendarEvents.push({
               id: `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${idx}`,
-              title: commitment.title,
+              title: modifiedSession?.title || commitment.title,
               start,
               end,
               resource: {
                 type: 'commitment',
-                data: commitment
+                data: {
+                  ...commitment,
+                  title: modifiedSession?.title || commitment.title,
+                  startTime: modifiedSession?.startTime || commitment.startTime,
+                  endTime: modifiedSession?.endTime || commitment.endTime,
+                  type: modifiedSession?.type || commitment.type
+                }
               }
             });
           });
@@ -380,15 +414,63 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       }
       // Otherwise, do nothing (not clickable)
     } else if (event.resource.type === 'commitment') {
-      // Only handle manual rescheduled sessions
       const commitment = event.resource.data as FixedCommitment;
+      
+      // Check if this is a manual rescheduled session
       if (commitment.type === 'other' && commitment.title.includes('(Manual Resched)')) {
         setSelectedManualSession(commitment);
+      } else {
+        // Handle regular commitment session management
+        const targetDate = event.start.toISOString().split('T')[0];
+        
+        // Check if this session is deleted
+        if (commitment.deletedOccurrences?.includes(targetDate)) {
+          return; // Don't allow interaction with deleted sessions
+        }
+        
+        // Check if this session is modified
+        const modifiedSession = commitment.modifiedOccurrences?.[targetDate];
+        
+        setSelectedSessionToManage({
+          commitment: {
+            ...commitment,
+            title: modifiedSession?.title || commitment.title,
+            startTime: modifiedSession?.startTime || commitment.startTime,
+            endTime: modifiedSession?.endTime || commitment.endTime,
+            type: modifiedSession?.type || commitment.type
+          },
+          date: targetDate
+        });
+        setShowSessionManager(true);
       }
     }
   };
 
+  const handleDeleteSession = (commitmentId: string, date: string) => {
+    if (onDeleteCommitmentSession) {
+      onDeleteCommitmentSession(commitmentId, date);
+    }
+    setShowSessionManager(false);
+    setSelectedSessionToManage(null);
+  };
 
+  const handleEditSession = (commitmentId: string, date: string, updates: {
+    startTime?: string;
+    endTime?: string;
+    title?: string;
+    type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
+  }) => {
+    if (onEditCommitmentSession) {
+      onEditCommitmentSession(commitmentId, date, updates);
+    }
+    setShowSessionManager(false);
+    setSelectedSessionToManage(null);
+  };
+
+  const handleCancelSessionManager = () => {
+    setShowSessionManager(false);
+    setSelectedSessionToManage(null);
+  };
 
   // Custom event style for modern look, now color-coded by priority or type
   const eventStyleGetter = (event: CalendarEvent, start: Date, _end: Date, isSelected: boolean) => {
@@ -1140,6 +1222,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Session Manager Modal */}
+      {showSessionManager && selectedSessionToManage && (
+        <CommitmentSessionManager
+          commitment={selectedSessionToManage.commitment}
+          targetDate={selectedSessionToManage.date}
+          onDeleteSession={handleDeleteSession}
+          onEditSession={handleEditSession}
+          onCancel={handleCancelSessionManager}
+        />
       )}
     </div>
   );

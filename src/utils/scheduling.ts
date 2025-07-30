@@ -108,7 +108,8 @@ function findNextAvailableTimeSlot(
   commitments: FixedCommitment[],
   studyWindowStartHour: number,
   studyWindowEndHour: number,
-  bufferTimeBetweenSessions: number = 0 // new param, in minutes
+  bufferTimeBetweenSessions: number = 0, // new param, in minutes
+  targetDate?: string // Add target date for filtering deleted occurrences
 ): { start: string; end: string } | null {
   // Build a list of all busy intervals (sessions and commitments)
   const busyIntervals: Array<{ start: number; end: number }> = [];
@@ -117,11 +118,34 @@ function findNextAvailableTimeSlot(
     const [eh, em] = s.endTime.split(":").map(Number);
     busyIntervals.push({ start: sh * 60 + (sm || 0), end: eh * 60 + (em || 0) });
   });
-  commitments.forEach(c => {
+  
+  // Filter commitments to exclude deleted occurrences and apply modifications
+  const activeCommitments = commitments.filter(commitment => {
+    if (!targetDate) return true; // If no target date, include all commitments
+    return !commitment.deletedOccurrences?.includes(targetDate);
+  });
+  
+  activeCommitments.forEach(c => {
     const [sh, sm] = c.startTime.split(":").map(Number);
     const [eh, em] = c.endTime.split(":").map(Number);
-    busyIntervals.push({ start: sh * 60 + (sm || 0), end: eh * 60 + (em || 0) });
+    
+    // Apply modifications if they exist for the target date
+    if (targetDate && c.modifiedOccurrences?.[targetDate]) {
+      const modified = c.modifiedOccurrences[targetDate];
+      if (modified.startTime) {
+        const [msh, msm] = modified.startTime.split(":").map(Number);
+        busyIntervals.push({ start: msh * 60 + (msm || 0), end: eh * 60 + (em || 0) });
+      } else if (modified.endTime) {
+        const [meh, mem] = modified.endTime.split(":").map(Number);
+        busyIntervals.push({ start: sh * 60 + (sm || 0), end: meh * 60 + (mem || 0) });
+      } else {
+        busyIntervals.push({ start: sh * 60 + (sm || 0), end: eh * 60 + (em || 0) });
+      }
+    } else {
+      busyIntervals.push({ start: sh * 60 + (sm || 0), end: eh * 60 + (em || 0) });
+    }
   });
+  
   busyIntervals.sort((a, b) => a.start - b.start);
   // Find the first available slot
   const requiredMinutes = Math.ceil(requiredHours * 60);
@@ -254,7 +278,6 @@ export const generateNewStudyPlan = (
       let redistributionRound = 0;
       const maxRedistributionRounds = 10; // Prevent infinite loops
       const minSessionLength = (settings.minSessionLength || 15) / 60; // in hours
-      const maxSessionLength = Math.min(4, settings.dailyAvailableHours); // Cap at 4 hours or daily limit
       
       while (remainingUnscheduledHours > 0 && redistributionRound < maxRedistributionRounds) {
         redistributionRound++;
@@ -378,7 +401,6 @@ export const generateNewStudyPlan = (
       
       // Calculate how many sessions we can create with minimum length
       const maxSessionsWithMinLength = Math.floor(totalHours / minSessionLength);
-      const maxSessionsWithMaxLength = Math.floor(totalHours / maxSessionLength);
       
       // Determine optimal number of sessions
       let numSessions = Math.min(daysForTask.length, maxSessionsWithMinLength);
@@ -579,7 +601,8 @@ export const generateNewStudyPlan = (
           commitmentsForDay,
           settings.studyWindowStartHour || 6,
           settings.studyWindowEndHour || 23,
-          settings.bufferTimeBetweenSessions || 0 // pass buffer
+          settings.bufferTimeBetweenSessions || 0, // pass buffer
+          plan.date // pass target date for filtering deleted occurrences
         );
         if (slot) {
           session.startTime = slot.start;
@@ -738,7 +761,8 @@ export const generateNewStudyPlan = (
           commitmentsForDay,
           settings.studyWindowStartHour || 6,
           settings.studyWindowEndHour || 23,
-          settings.bufferTimeBetweenSessions || 0 // pass buffer
+          settings.bufferTimeBetweenSessions || 0, // pass buffer
+          date // pass target date for filtering deleted occurrences
         );
         if (!slot) continue; // No available slot for this session
         const sessionNumber = (dayPlan.plannedTasks.filter(s => s.taskId === task.id).length) + 1;
@@ -911,9 +935,12 @@ export const getDailyAvailableTimeSlots = (
     return slots;
   }
   
-  // Filter commitments for this day
+  const dateString = date.toISOString().split('T')[0];
+  
+  // Filter commitments for this day, excluding deleted occurrences
   const dayCommitments = commitments.filter(commitment => 
-    commitment.daysOfWeek.includes(dayOfWeek)
+    commitment.daysOfWeek.includes(dayOfWeek) && 
+    !commitment.deletedOccurrences?.includes(dateString)
   );
   
   // Create time slots around commitments
@@ -928,17 +955,21 @@ export const getDailyAvailableTimeSlots = (
   let usedMinutes = 0;
   
   // Sort commitments by start time
-  const sortedCommitments = dayCommitments.sort((a, b) => 
-    a.startTime.localeCompare(b.startTime)
-  );
+  const sortedCommitments = dayCommitments.sort((a, b) => {
+    const aStartTime = a.modifiedOccurrences?.[dateString]?.startTime || a.startTime;
+    const bStartTime = b.modifiedOccurrences?.[dateString]?.startTime || b.startTime;
+    return aStartTime.localeCompare(bStartTime);
+  });
   
   for (const commitment of sortedCommitments) {
+    const modifiedSession = commitment.modifiedOccurrences?.[dateString];
+    
     const commitmentStart = new Date(date);
-    const [startHour, startMinute] = commitment.startTime.split(':').map(Number);
+    const [startHour, startMinute] = (modifiedSession?.startTime || commitment.startTime).split(':').map(Number);
     commitmentStart.setHours(startHour, startMinute, 0, 0);
     
     const commitmentEnd = new Date(date);
-    const [endHour, endMinute] = commitment.endTime.split(':').map(Number);
+    const [endHour, endMinute] = (modifiedSession?.endTime || commitment.endTime).split(':').map(Number);
     commitmentEnd.setHours(endHour, endMinute, 0, 0);
     
     // Add slot before commitment if there's time
@@ -1244,7 +1275,7 @@ export const moveMissedSessions = (
     taskSessions.sort((a, b) => b.priority - a.priority);
     
     // Try to move all sessions for this task together
-    for (const {session, planDate, planIndex, sessionIndex, task} of taskSessions) {
+    for (const {session, planDate, planIndex} of taskSessions) {
       const sessionDuration = session.allocatedHours;
       
       // Try to move the session
@@ -1791,24 +1822,30 @@ export const redistributeAfterTaskDeletion = (
 
   // Helper function to optimize session distribution (same as in generateNewStudyPlan)
   const optimizeSessionDistribution = (task: Task, totalHours: number, daysForTask: string[]) => {
-    const minSessionLength = (settings.minSessionLength || 15) / 60;
-    const maxSessionLength = Math.min(4, settings.dailyAvailableHours);
+    const minSessionLength = (settings.minSessionLength || 15) / 60; // in hours
+    const maxSessionLength = Math.min(4, settings.dailyAvailableHours); // Cap at 4 hours or daily limit
     
+    // Try to create fewer, larger sessions
     let optimalSessions: number[] = [];
     let remainingHours = totalHours;
     
+    // Calculate how many sessions we can create with minimum length
     const maxSessionsWithMinLength = Math.floor(totalHours / minSessionLength);
+    
+    // Determine optimal number of sessions
     let numSessions = Math.min(daysForTask.length, maxSessionsWithMinLength);
     
     if (numSessions === 0) {
+      // If we can't meet minimum session length, create one session per day
       numSessions = daysForTask.length;
     }
     
+    // Create sessions with preference for larger sessions
     for (let i = 0; i < numSessions && remainingHours > 0; i++) {
       const sessionLength = Math.min(
-        remainingHours / (numSessions - i),
-        maxSessionLength,
-        remainingHours
+        remainingHours / (numSessions - i), // Distribute remaining hours evenly
+        maxSessionLength, // Don't exceed max session length
+        remainingHours // Don't exceed remaining hours
       );
       
       if (sessionLength >= minSessionLength) {
@@ -1817,6 +1854,7 @@ export const redistributeAfterTaskDeletion = (
       }
     }
     
+    // If we have remaining hours, add them to the first session
     if (remainingHours > 0 && optimalSessions.length > 0) {
       optimalSessions[0] += remainingHours;
     }
@@ -1961,7 +1999,8 @@ export const redistributeAfterTaskDeletion = (
         commitmentsForDay,
         settings.studyWindowStartHour || 6,
         settings.studyWindowEndHour || 23,
-        settings.bufferTimeBetweenSessions || 0
+        settings.bufferTimeBetweenSessions || 0, // pass buffer
+        plan.date // pass target date for filtering deleted occurrences
       );
       if (slot) {
         session.startTime = slot.start;

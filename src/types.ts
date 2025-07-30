@@ -97,6 +97,16 @@ export interface FixedCommitment {
   location?: string;
   description?: string;
   createdAt: string;
+  // New fields for individual session management
+  deletedOccurrences?: string[]; // Array of date strings (YYYY-MM-DD)
+  modifiedOccurrences?: {
+    [date: string]: {
+      startTime?: string;
+      endTime?: string;
+      title?: string;
+      type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
+    };
+  };
 }
 
 export interface CalendarEvent {
