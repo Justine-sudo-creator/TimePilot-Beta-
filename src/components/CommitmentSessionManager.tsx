@@ -1,17 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FixedCommitment } from '../types';
-import { X, Edit, Trash2, Calendar, Clock } from 'lucide-react';
+import { X, Calendar, Clock } from 'lucide-react';
 
 interface CommitmentSessionManagerProps {
   commitment: FixedCommitment;
   targetDate: string;
   onDeleteSession: (commitmentId: string, date: string) => void;
-  onEditSession: (commitmentId: string, date: string, updates: {
-    startTime?: string;
-    endTime?: string;
-    title?: string;
-    type?: 'class' | 'work' | 'appointment' | 'other' | 'buffer';
-  }) => void;
   onCancel: () => void;
 }
 
@@ -19,42 +13,8 @@ const CommitmentSessionManager: React.FC<CommitmentSessionManagerProps> = ({
   commitment,
   targetDate,
   onDeleteSession,
-  onEditSession,
   onCancel
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    startTime: commitment.startTime,
-    endTime: commitment.endTime,
-    title: commitment.title,
-    type: commitment.type
-  });
-
-  const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete "${commitment.title}" on ${targetDate}?`)) {
-      onDeleteSession(commitment.id, targetDate);
-    }
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleSaveEdit = () => {
-    onEditSession(commitment.id, targetDate, editData);
-    setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditData({
-      startTime: commitment.startTime,
-      endTime: commitment.endTime,
-      title: commitment.title,
-      type: commitment.type
-    });
-    setIsEditing(false);
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -86,97 +46,6 @@ const CommitmentSessionManager: React.FC<CommitmentSessionManagerProps> = ({
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
   };
-
-  if (isEditing) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              Edit Session
-            </h3>
-            <button
-              onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                value={editData.title}
-                onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  value={editData.startTime}
-                  onChange={(e) => setEditData(prev => ({ ...prev, startTime: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  value={editData.endTime}
-                  onChange={(e) => setEditData(prev => ({ ...prev, endTime: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Type
-              </label>
-              <select
-                value={editData.type}
-                onChange={(e) => setEditData(prev => ({ ...prev, type: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="class">Class</option>
-                <option value="work">Work</option>
-                <option value="appointment">Appointment</option>
-                <option value="other">Other</option>
-                <option value="buffer">Buffer</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              onClick={handleCancelEdit}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveEdit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -226,9 +95,6 @@ const CommitmentSessionManager: React.FC<CommitmentSessionManagerProps> = ({
               {commitment.description}
             </div>
           )}
-        </div>
-
-        <div className="flex justify-end space-x-3 mt-6">
         </div>
       </div>
     </div>

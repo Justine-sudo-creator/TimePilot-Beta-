@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Edit, Clock, MapPin, User, X, AlertTriangle } from 'lucide-react';
 import { FixedCommitment } from '../types';
 import { checkCommitmentConflicts } from '../utils/scheduling';
@@ -88,10 +88,9 @@ const FixedCommitmentEdit: React.FC<FixedCommitmentEditProps> = ({ commitment, e
         specificDates: formData.specificDates,
         type: formData.type,
         location: formData.location,
-        description: formData.description,
-        deletedOccurrences: commitment.deletedOccurrences,
-        modifiedOccurrences: commitment.modifiedOccurrences,
+        description: formData.description
       });
+      onCancel();
     }
   };
 
