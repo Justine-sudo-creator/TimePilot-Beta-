@@ -65,13 +65,13 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
     const events: CalendarEvent[] = [];
     const selectedDateStr = moment(selectedDate).format('YYYY-MM-DD');
 
-    // Add study sessions
+    // --- Study Sessions ---
     const selectedPlan = studyPlans.find(plan => plan.date === selectedDateStr);
     if (selectedPlan) {
       selectedPlan.plannedTasks.forEach(session => {
         const task = tasks.find(t => t.id === session.taskId);
         if (task) {
-          // Parse session start and end times as moments on the selected date
+          // Ensure correct parsing of startTime and endTime for the selectedDate
           const startTime = moment(selectedDate)
             .set({
               hour: parseInt(session.startTime.split(':')[0], 10),
@@ -88,7 +88,7 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
             });
 
           events.push({
-            id: `${session.taskId}-${session.sessionNumber}`,
+            id: `${session.taskId}-${session.sessionNumber}`, // Unique ID for each session
             title: `${task.title} (Session ${session.sessionNumber})`,
             start: startTime.toDate(),
             end: endTime.toDate(),
@@ -101,7 +101,7 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
       });
     }
 
-    // Add fixed commitments with support for deleted and modified occurrences
+    // --- Fixed Commitments ---
     const dayOfWeek = selectedDate.getDay();
     fixedCommitments.forEach(commitment => {
       let shouldInclude = false;
@@ -117,40 +117,58 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
       if (shouldInclude) {
         const dateString = selectedDateStr;
         
-        // Skip deleted occurrences
+        // Skip deleted occurrences to prevent them from being displayed
         if (commitment.deletedOccurrences?.includes(dateString)) {
-          return;
+          return; 
         }
 
-        // Check for modified occurrence
+        // Check for modified occurrence for the specific date
         const modifiedSession = commitment.modifiedOccurrences?.[dateString];
         
-        const startTime = moment(selectedDate).add(moment(modifiedSession?.startTime || commitment.startTime, 'HH:mm') as any);
-        const endTime = moment(selectedDate).add(moment(modifiedSession?.endTime || commitment.endTime, 'HH:mm') as any);
+        // Use modified times if they exist, otherwise use original commitment times
+        const [startHour, startMinute] = (modifiedSession?.startTime || commitment.startTime).split(':').map(Number);
+        const [endHour, endMinute] = (modifiedSession?.endTime || commitment.endTime).split(':').map(Number);
+        
+        // Set the hour and minute on the selectedDate to create the correct timestamp
+        const startTime = moment(selectedDate)
+          .set({
+            hour: startHour,
+            minute: startMinute,
+            second: 0,
+            millisecond: 0
+          });
+        const endTime = moment(selectedDate)
+          .set({
+            hour: endHour,
+            minute: endMinute,
+            second: 0,
+            millisecond: 0
+          });
         
         events.push({
-          id: commitment.id,
+          id: commitment.id, // Using commitment ID as the event ID
           title: modifiedSession?.title || commitment.title,
           start: startTime.toDate(),
           end: endTime.toDate(),
           resource: {
             type: 'commitment',
             data: {
-              ...commitment,
-              title: modifiedSession?.title || commitment.title,
-              startTime: modifiedSession?.startTime || commitment.startTime,
-              endTime: modifiedSession?.endTime || commitment.endTime,
-              type: modifiedSession?.type || commitment.type
+              ...commitment, // Spread original commitment data
+              title: modifiedSession?.title || commitment.title, // Override with modified title if present
+              startTime: modifiedSession?.startTime || commitment.startTime, // Override with modified start time if present
+              endTime: modifiedSession?.endTime || commitment.endTime, // Override with modified end time if present
+              type: modifiedSession?.type || commitment.type // Override with modified type if present
             }
           }
         });
       }
     });
 
+    // Sort events by start time to ensure correct chronological display
     return events.sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [selectedDate, studyPlans, fixedCommitments, tasks]);
 
-  // Generate time slots (4 AM to 11 PM)
+  // Generate time slots (4 AM to 11 PM) for the vertical timeline
   const timeSlots = useMemo(() => {
     const slots = [];
     for (let hour = 4; hour <= 23; hour++) {
@@ -159,29 +177,33 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
     return slots;
   }, []);
 
+  // Determine event color based on type and status
   const getEventColor = (event: CalendarEvent) => {
     if (event.resource.type === 'commitment') {
       const commitment = event.resource.data as FixedCommitment;
       switch (commitment.type) {
-        case 'class': return '#3b82f6';
-        case 'work': return '#a21caf';
-        case 'appointment': return '#f59e42';
-        case 'other': return '#14b8a6';
-        default: return '#64748b';
+        case 'class': return '#3b82f6'; // Blue
+        case 'work': return '#a21caf';    // Purple
+        case 'appointment': return '#f59e42'; // Orange
+        case 'other': return '#14b8a6';   // Teal
+        case 'buffer': return '#64748b'; // Gray (default for buffer)
+        default: return '#64748b';       // Default gray
       }
     } else {
       const { session, task } = event.resource.data;
       const sessionStatus = checkSessionStatus(session, moment(selectedDate).format('YYYY-MM-DD'));
       
-      if (sessionStatus === 'missed') return '#dc2626';
-      if (sessionStatus === 'overdue') return '#c2410c';
-      if (session.done || session.status === 'completed') return '#d1d5db';
-      if (task.importance) return '#f59e0b';
+      if (sessionStatus === 'missed') return '#dc2626';  // Red
+      if (sessionStatus === 'overdue') return '#c2410c'; // Darker Orange/Brown
+      if (session.done || session.status === 'completed') return '#d1d5db'; // Light Gray (completed)
+      if (task.importance) return '#f59e0b';           // Amber (important tasks)
       
-      return task.category ? getCategoryColor(task.category) : '#64748b';
+      // Fallback to category color if available
+      return task.category ? getCategoryColor(task.category) : '#64748b'; // Default gray
     }
   };
 
+  // Helper to get color based on task category
   const getCategoryColor = (category: string): string => {
     switch (category.toLowerCase()) {
       case 'academics': return '#3b82f6';
@@ -196,15 +218,16 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
     }
   };
 
+  // Handle click on a calendar event
   const handleEventClick = (event: CalendarEvent) => {
     if (event.resource.type === 'commitment') {
-      // For commitments, open the session manager instead of the simple modal
+      // For commitments, open the session manager to allow editing/deletion of occurrences
       const commitment = event.resource.data as FixedCommitment;
       const dateString = moment(selectedDate).format('YYYY-MM-DD');
       
-      // Check if this occurrence is deleted
+      // Prevent interaction with explicitly deleted occurrences
       if (commitment.deletedOccurrences?.includes(dateString)) {
-        return; // Don't allow interaction with deleted occurrences
+        return; 
       }
       
       setSelectedSessionToManage({
@@ -213,29 +236,36 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
       });
       setShowSessionManager(true);
     } else {
+      // For study sessions, show a simple detail modal
       setSelectedEvent(event);
     }
   };
 
+  // Handle starting a manual commitment session from the detail modal
   const handleStartSession = () => {
     if (selectedEvent && selectedEvent.resource.type === 'commitment' && onStartManualSession) {
       const commitment = selectedEvent.resource.data as FixedCommitment;
-      const [sh, sm] = commitment.startTime.split(":").map(Number);
-      const [eh, em] = commitment.endTime.split(":").map(Number);
-      let mins = (eh * 60 + em) - (sh * 60 + sm);
-      if (mins < 0) mins += 24 * 60;
-      onStartManualSession(commitment, mins * 60);
+      // Calculate duration in seconds
+      const startMoment = moment(commitment.startTime, 'HH:mm');
+      const endMoment = moment(commitment.endTime, 'HH:mm');
+      let durationMinutes = endMoment.diff(startMoment, 'minutes');
+      if (durationMinutes < 0) { // Handle overnight commitments
+        durationMinutes += 24 * 60;
+      }
+      onStartManualSession(commitment, durationMinutes * 60);
     }
-    setSelectedEvent(null);
+    setSelectedEvent(null); // Close modal after starting
   };
 
+  // Handle deleting a fixed commitment from the detail modal (deletes the entire commitment)
   const handleDeleteSession = () => {
     if (selectedEvent && selectedEvent.resource.type === 'commitment' && onDeleteFixedCommitment) {
       onDeleteFixedCommitment(selectedEvent.resource.data.id);
     }
-    setSelectedEvent(null);
+    setSelectedEvent(null); // Close modal after deleting
   };
 
+  // Callback for deleting a specific occurrence of a commitment from the session manager
   const handleDeleteCommitmentSession = (commitmentId: string, date: string) => {
     if (onDeleteCommitmentSession) {
       onDeleteCommitmentSession(commitmentId, date);
@@ -244,6 +274,7 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
     setSelectedSessionToManage(null);
   };
 
+  // Callback for editing a specific occurrence of a commitment from the session manager
   const handleEditCommitmentSession = (commitmentId: string, date: string, updates: {
     startTime?: string;
     endTime?: string;
@@ -257,20 +288,25 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
     setSelectedSessionToManage(null);
   };
 
+  // Cancel button handler for the session manager modal
   const handleCancelSessionManager = () => {
     setShowSessionManager(false);
     setSelectedSessionToManage(null);
   };
 
+  // Format hour for time slot display (e.g., "4 AM", "1 PM")
   const formatTimeSlot = (hour: number) => {
     return moment().hour(hour).format('h A');
   };
 
+  // Filter events for a specific time slot to display on the timeline
   const getEventsForTimeSlot = (hour: number) => {
     return selectedDateEvents.filter(event => {
-      const eventStart = event.start.getHours();
-      const eventEnd = event.end.getHours();
-      return eventStart <= hour && eventEnd > hour;
+      const eventStartHour = event.start.getHours();
+      const eventEndHour = event.end.getHours();
+      // An event is relevant for a slot if it starts at or before the hour and ends after the hour.
+      // This ensures events spanning multiple hours are shown in each relevant hour slot.
+      return eventStartHour <= hour && eventEndHour > hour;
     });
   };
 
@@ -343,7 +379,7 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
                   <div className="flex-1 p-3 min-h-[60px]">
                     {events.map((event) => (
                       <div
-                        key={event.id}
+                        key={event.id} // Ensure unique key for each event render
                         onClick={() => handleEventClick(event)}
                         className="mb-2 p-3 rounded-lg text-white text-sm font-medium cursor-pointer transition-all duration-200 hover:opacity-80"
                         style={{ backgroundColor: getEventColor(event) }}
@@ -355,10 +391,13 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
                                 const durationHours = moment(event.end).diff(moment(event.start), 'hours', true);
                                 const durationMinutes = moment(event.end).diff(moment(event.start), 'minutes', true);
                                 if (durationHours >= 1) {
+                                  // Display hours if at least 1 full hour
                                   return `(${Math.round(durationHours)}h)`;
-                                } else {
+                                } else if (durationMinutes > 0) {
+                                  // Display minutes if less than an hour but more than 0
                                   return `(${Math.round(durationMinutes)}m)`;
                                 }
+                                return ''; // No duration if 0 or negative
                               })()}
                             </div>
                             <div className="text-xs opacity-90">
@@ -484,4 +523,4 @@ const MobileCalendarView: React.FC<MobileCalendarViewProps> = ({
   );
 };
 
-export default MobileCalendarView; 
+export default MobileCalendarView;
