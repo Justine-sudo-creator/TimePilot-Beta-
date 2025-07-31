@@ -267,38 +267,44 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
     setRedistributionResults(null);
 
     try {
-      const options: RedistributionOptions = {
-        prioritizeMissedSessions: true,
-        respectDailyLimits: true,
-        allowWeekendOverflow: false,
-        maxRedistributionDays: 14
-      };
+      // Use parent handler if available (preferred), otherwise use local implementation
+      if (onEnhancedRedistribution) {
+        onEnhancedRedistribution();
+        setRedistributionResults({
+          success: true,
+          message: 'Enhanced redistribution completed!'
+        });
+      } else {
+        // Fallback to local implementation
+        const options: RedistributionOptions = {
+          prioritizeMissedSessions: true,
+          respectDailyLimits: true,
+          allowWeekendOverflow: false,
+          maxRedistributionDays: 14
+        };
 
-      const result = redistributeMissedSessionsEnhanced(
-        studyPlans,
-        settings,
-        fixedCommitments,
-        tasks,
-        options
-      );
+        const result = redistributeMissedSessionsEnhanced(
+          studyPlans,
+          settings,
+          fixedCommitments,
+          tasks,
+          options
+        );
 
-      setRedistributionResults({
-        success: result.totalSessionsMoved > 0,
-        message: result.totalSessionsMoved > 0
-          ? `Successfully redistributed ${result.totalSessionsMoved} session${result.totalSessionsMoved > 1 ? 's' : ''}!`
-          : 'No sessions could be redistributed. Check your schedule for available time slots.',
-        details: {
-          redistributed: result.totalSessionsMoved,
-          failed: result.failedSessions.length,
-          conflictsResolved: result.conflictsResolved
-        }
-      });
+        setRedistributionResults({
+          success: result.totalSessionsMoved > 0,
+          message: result.totalSessionsMoved > 0
+            ? `Successfully redistributed ${result.totalSessionsMoved} session${result.totalSessionsMoved > 1 ? 's' : ''}!`
+            : 'No sessions could be redistributed. Check your schedule for available time slots.',
+          details: {
+            redistributed: result.totalSessionsMoved,
+            failed: result.failedSessions.length,
+            conflictsResolved: result.conflictsResolved
+          }
+        });
 
-      if (result.totalSessionsMoved > 0) {
-        setNotificationMessage(`Redistribution complete: ${result.totalSessionsMoved} sessions moved, ${result.failedSessions.length} failed`);
-        // Call the original handler to refresh the UI
-        if (onRedistributeMissedSessions) {
-          onRedistributeMissedSessions();
+        if (result.totalSessionsMoved > 0) {
+          setNotificationMessage(`Redistribution complete: ${result.totalSessionsMoved} sessions moved, ${result.failedSessions.length} failed`);
         }
       }
 
