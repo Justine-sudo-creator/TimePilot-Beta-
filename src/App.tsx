@@ -404,21 +404,54 @@ function App() {
         }
     };
 
-    // Handle redistribution of missed sessions specifically
+    // Enhanced redistribution handler with conflict prevention
+    const handleEnhancedRedistribution = () => {
+        if (tasks.length > 0) {
+            const options: RedistributionOptions = {
+                prioritizeMissedSessions: true,
+                respectDailyLimits: true,
+                allowWeekendOverflow: false,
+                maxRedistributionDays: 14
+            };
+
+            try {
+                const result = redistributeMissedSessionsEnhanced(
+                    studyPlans,
+                    settings,
+                    fixedCommitments,
+                    tasks,
+                    options
+                );
+
+                if (result.totalSessionsMoved > 0) {
+                    setNotificationMessage(
+                        `Enhanced redistribution complete: ${result.totalSessionsMoved} sessions moved, ${result.failedSessions.length} failed, ${result.conflictsResolved} conflicts resolved`
+                    );
+                } else {
+                    setNotificationMessage('No sessions could be redistributed. Check your schedule for available time slots.');
+                }
+            } catch (error) {
+                console.error('Enhanced redistribution failed:', error);
+                setNotificationMessage('Enhanced redistribution failed. Please try again.');
+            }
+        }
+    };
+
+    // Handle redistribution of missed sessions specifically (legacy method)
     const handleRedistributeMissedSessions = () => {
         if (tasks.length > 0) {
             // Use enhanced redistribution with detailed feedback
             const { updatedPlans, feedback } = redistributeMissedSessionsWithFeedback(studyPlans, settings, fixedCommitments, tasks);
-            
+
             if (feedback.success) {
                 setStudyPlans(updatedPlans);
                 setNotificationMessage(feedback.message);
-                
+
                 // Log detailed information for debugging
                 console.log('Redistribution details:', feedback.details);
             } else {
                 setNotificationMessage(feedback.message);
-                
+
                 // Log conflicts and issues for debugging
                 if (feedback.details.conflictsDetected || feedback.details.issues.length > 0 || feedback.details.remainingMissed > 0) {
                     console.warn('Redistribution issues detected:', {
