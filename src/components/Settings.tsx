@@ -326,12 +326,14 @@ const Settings: React.FC<SettingsProps> = ({
           {/* Left Column */}
           <div className="space-y-6">
         {/* Daily Available Hours */}
-        <div>
-              <label htmlFor="dailyHours" className="flex text-sm font-medium text-gray-700 mb-1 items-center space-x-2 dark:text-gray-200">
-                <Clock size={16} className="text-gray-500 dark:text-gray-400" />
+        <div className="backdrop-blur-sm bg-white/50 dark:bg-white/5 rounded-2xl p-5 border border-white/20 dark:border-white/10 transition-all duration-300 hover:bg-white/60 dark:hover:bg-white/10">
+              <label htmlFor="dailyHours" className="flex text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 items-center space-x-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                  <Clock size={14} className="text-white" />
+                </div>
             <span>How many hours can you study per day?</span>
           </label>
-              <p className="text-xs text-gray-500 mb-1 dark:text-gray-400">This includes all your study time for the day.</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">This includes all your study time for the day.</p>
           <input
             type="number"
             id="dailyHours"
@@ -340,7 +342,7 @@ const Settings: React.FC<SettingsProps> = ({
             min="1"
             max="24"
             disabled={isSettingDisabled('dailyAvailableHours')}
-            className={`block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white ${getDisabledStyling('dailyAvailableHours')}`}
+            className={`block w-full backdrop-blur-sm bg-white/70 dark:bg-black/20 border border-white/30 dark:border-white/20 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm dark:text-white transition-all duration-300 ${getDisabledStyling('dailyAvailableHours')}`}
             required
           />
         </div>
