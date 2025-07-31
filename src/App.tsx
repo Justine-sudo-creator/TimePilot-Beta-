@@ -1636,10 +1636,10 @@ function App() {
                 </header>
 
                 {/* Navigation */}
-                <nav className="bg-white shadow-sm border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
+                <nav className="backdrop-blur-md bg-white/5 dark:bg-black/5 border-b border-white/10 dark:border-white/5">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* Desktop Navigation */}
-                        <div className="hidden lg:flex space-x-8">
+                        <div className="hidden lg:flex space-x-2">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
@@ -1647,14 +1647,17 @@ function App() {
                                         setActiveTab(tab.id as typeof activeTab);
                                         setMobileMenuOpen(false);
                                     }}
-                                    className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors duration-200 border-b-2 ${
+                                    className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-all duration-300 rounded-t-2xl relative group ${
                                         activeTab === tab.id
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-700 dark:text-violet-300 border-b-2 border-violet-500'
+                                            : 'text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-white/10 dark:hover:bg-white/5'
                                         } ${showInteractiveTutorial && highlightedTab === tab.id ? 'ring-2 ring-yellow-400 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`}
                                 >
-                                    <tab.icon size={20} />
+                                    <tab.icon size={20} className={activeTab === tab.id ? 'text-violet-600 dark:text-violet-400' : ''} />
                                     <span>{tab.label}</span>
+                                    {activeTab === tab.id && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-t-2xl"></div>
+                                    )}
                                 </button>
                             ))}
                         </div>
