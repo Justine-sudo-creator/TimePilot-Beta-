@@ -687,7 +687,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             <div className="text-6xl mb-4">🎉</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2 dark:text-white">No Work Today!</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              It's your day off! Time to relax, recharge, and maybe catch up on some Netflix. 📺
+              It's your day off! Time to relax, recharge, and maybe catch up on some Netflix. ����
             </p>
             <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg p-4">
               <p className="text-sm text-gray-700 dark:text-gray-200">
@@ -864,7 +864,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             
                           return (
                 <div
-                  key={index}
+                  key={`today-${session.taskId}-${session.sessionNumber || 0}-${session.startTime || ''}-${todaysPlan.date}`}
                   className={`p-4 border-l-4 rounded-lg study-session-item ${!isDone && !isCompleted && sessionStatus !== 'missed' ? 'cursor-pointer hover:shadow-md' : 'cursor-default'} transition-all duration-200 flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring}`}
                   onClick={() => !isDone && !isCompleted && sessionStatus !== 'missed' && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
                 >
