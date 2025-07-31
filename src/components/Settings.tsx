@@ -290,14 +290,14 @@ const Settings: React.FC<SettingsProps> = ({
 
       {/* Validation Messages */}
       {validationMessages.length > 0 && (
-        <div className="mb-4 space-y-2">
+        <div className="mb-6 space-y-3">
           {validationMessages.map((msg, index) => (
             <div
               key={index}
-              className={`flex items-start space-x-2 p-3 rounded-md ${
-                msg.type === 'error' 
-                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
-                  : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+              className={`flex items-start space-x-3 p-4 rounded-2xl backdrop-blur-sm border ${
+                msg.type === 'error'
+                  ? 'bg-red-500/10 border-red-300/50 dark:border-red-500/30'
+                  : 'bg-yellow-500/10 border-yellow-300/50 dark:border-yellow-500/30'
               }`}
             >
               <AlertTriangle 
