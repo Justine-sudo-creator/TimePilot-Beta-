@@ -822,7 +822,7 @@ export const generateNewStudyPlan = (
         if (daysForTask.length === 0) continue;
 
         // Use optimized session distribution for even spreading
-        const sessionLengths = optimizeSessionDistribution(task, task.estimatedHours, daysForTask);
+        const sessionLengths = optimizeSessionDistribution(task, task.estimatedHours, daysForTask, settings);
 
         for (let i = 0; i < sessionLengths.length && i < daysForTask.length; i++) {
           const date = daysForTask[i];
