@@ -320,11 +320,11 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-6">
         {/* Two Column Layout for Main Settings */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column */}
-          <div className="space-y-4">
+          <div className="space-y-6">
         {/* Daily Available Hours */}
         <div>
               <label htmlFor="dailyHours" className="flex text-sm font-medium text-gray-700 mb-1 items-center space-x-2 dark:text-gray-200">
