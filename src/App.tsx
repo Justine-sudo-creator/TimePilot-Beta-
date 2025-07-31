@@ -1664,7 +1664,7 @@ function App() {
 
                         {/* Mobile Navigation */}
                         <div className={`lg:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
-                            <div className="py-2 space-y-1">
+                            <div className="py-4 space-y-2">
                                 {tabs.map((tab) => (
                                     <button
                                         key={tab.id}
@@ -1672,13 +1672,13 @@ function App() {
                                             setActiveTab(tab.id as typeof activeTab);
                                             setMobileMenuOpen(false);
                                         }}
-                                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors duration-200 rounded-lg ${
+                                        className={`w-full flex items-center space-x-3 px-6 py-4 text-sm font-medium transition-all duration-300 rounded-2xl backdrop-blur-sm ${
                                             activeTab === tab.id
-                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800'
+                                                ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-700 dark:text-violet-300 border border-violet-200/50 dark:border-violet-500/30'
+                                                : 'text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-white/10 dark:hover:bg-white/5 border border-transparent'
                                         } ${showInteractiveTutorial && highlightedTab === tab.id ? 'ring-2 ring-yellow-400 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`}
                                     >
-                                        <tab.icon size={20} />
+                                        <tab.icon size={20} className={activeTab === tab.id ? 'text-violet-600 dark:text-violet-400' : ''} />
                                         <span>{tab.label}</span>
                                     </button>
                                 ))}
