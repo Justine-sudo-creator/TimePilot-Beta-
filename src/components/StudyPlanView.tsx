@@ -368,7 +368,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
                 <p>You have missed {missedSessions.length} study session{missedSessions.length > 1 ? 's' : ''}. You can:</p>
                 <ul className="mt-2 space-y-1">
                   <li>• <strong>Skip</strong> missed sessions (they won't be redistributed)</li>
-                  <li>• <strong>Redistribute missed sessions</strong> to automatically reschedule them in your new study plan</li>
+                  <li>• <strong>Smart Redistribution</strong> uses conflict-free scheduling with priority-based placement</li>
                   <li>• <strong>Start studying</strong> any missed session now</li>
                 </ul>
               </>
@@ -376,6 +376,40 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
               <p>No missed sessions found. All past study sessions have been completed or are up to date.</p>
             )}
           </div>
+
+          {/* Redistribution Results */}
+          {redistributionResults && (
+            <div className={`mb-4 p-4 rounded-lg border-l-4 ${
+              redistributionResults.success
+                ? 'bg-green-50 border-green-500 dark:bg-green-900/20 dark:border-green-400'
+                : 'bg-red-50 border-red-500 dark:bg-red-900/20 dark:border-red-400'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`font-medium ${
+                    redistributionResults.success
+                      ? 'text-green-800 dark:text-green-200'
+                      : 'text-red-800 dark:text-red-200'
+                  }`}>
+                    {redistributionResults.message}
+                  </p>
+                  {redistributionResults.details && (
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                      <p>• Sessions redistributed: {redistributionResults.details.redistributed}</p>
+                      <p>• Failed redistributions: {redistributionResults.details.failed}</p>
+                      <p>• Conflicts resolved: {redistributionResults.details.conflictsResolved}</p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setRedistributionResults(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3">
                         {missedSessions.length > 0 ? (
