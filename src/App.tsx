@@ -1705,11 +1705,11 @@ function App() {
                         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm sm:max-w-md lg:max-w-2xl px-4">
                             {notificationMessage.includes("can't be added due to schedule conflicts") ? (
                                 // Enhanced notification for task addition conflicts
-                                <div className="bg-white dark:bg-gray-800 border-l-4 border-orange-500 rounded-lg shadow-xl">
-                                    <div className="p-4 sm:p-6">
-                                        <div className="flex items-start space-x-3">
+                                <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 border border-orange-200/50 dark:border-orange-500/30 rounded-2xl shadow-2xl shadow-orange-500/20">
+                                    <div className="p-6 sm:p-8">
+                                        <div className="flex items-start space-x-4">
                                             <div className="flex-shrink-0">
-                                                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25">
                                                     <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                     </svg>
