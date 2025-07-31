@@ -338,11 +338,26 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={onRedistributeMissedSessions || onGenerateStudyPlan}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors"
-                title="Redistribute missed sessions to available time slots"
+                onClick={handleEnhancedRedistribution}
+                disabled={redistributionInProgress}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Intelligently redistribute missed sessions with conflict prevention"
               >
-                Redistribute Missed Sessions
+                {redistributionInProgress ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Redistributing...</span>
+                  </div>
+                ) : (
+                  'Smart Redistribution'
+                )}
+              </button>
+              <button
+                onClick={onRedistributeMissedSessions || onGenerateStudyPlan}
+                className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                title="Use legacy redistribution method"
+              >
+                Legacy Mode
               </button>
             </div>
           </div>
