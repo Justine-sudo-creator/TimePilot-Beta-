@@ -522,6 +522,18 @@ const Settings: React.FC<SettingsProps> = ({
               />
                   <span className="text-sm text-gray-700 dark:text-gray-200">Evenly Distributed <span className="text-xs text-gray-500 dark:text-gray-400">(spread all tasks equally)</span></span>
             </label>
+            <label className={`flex items-center gap-2 ${isSettingDisabled('studyPlanMode') ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <input
+                type="radio"
+                name="studyPlanMode"
+                value="balanced"
+                checked={studyPlanMode === 'balanced'}
+                onChange={() => setStudyPlanMode('balanced')}
+                disabled={isSettingDisabled('studyPlanMode')}
+                className="form-radio text-blue-600"
+              />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Balanced Priority <span className="text-xs text-gray-500 dark:text-gray-400">(priority-based even distribution)</span></span>
+            </label>
               </div>
             </div>
           </div>
