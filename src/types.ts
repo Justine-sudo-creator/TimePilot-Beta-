@@ -13,6 +13,28 @@ export interface Task {
   taskType?: string;
 }
 
+export interface SessionSchedulingMetadata {
+  originalSlot?: {
+    date: string;
+    startTime: string;
+    endTime: string;
+  };
+  rescheduleHistory: Array<{
+    from: { date: string; startTime: string; endTime: string };
+    to: { date: string; startTime: string; endTime: string };
+    timestamp: string;
+    reason: 'missed' | 'manual' | 'conflict' | 'redistribution';
+  }>;
+  redistributionRound?: number;
+  priority: number; // Calculated priority for redistribution
+}
+
+export interface SkipMetadata {
+  skippedAt: string;
+  reason?: 'user_choice' | 'conflict' | 'overload';
+  partialHours?: number; // For partial skipping
+}
+
 export interface StudySession {
   taskId: string;
   scheduledTime: string; // Keep for display purposes
@@ -26,7 +48,10 @@ export interface StudySession {
   status?: 'scheduled' | 'in_progress' | 'completed' | 'missed' | 'overdue' | 'rescheduled' | 'skipped'; // Session status including missed, skipped
   actualHours?: number; // New: actual hours spent (may differ from allocatedHours)
   completedAt?: string; // New: timestamp when session was completed
-  // New properties for rescheduled sessions
+  // Enhanced rescheduling metadata
+  schedulingMetadata?: SessionSchedulingMetadata;
+  skipMetadata?: SkipMetadata;
+  // Legacy properties for backward compatibility
   originalTime?: string; // Original start time (HH:MM format)
   originalDate?: string; // Original date (YYYY-MM-DD format)
   rescheduledAt?: string; // Timestamp when session was rescheduled
@@ -137,6 +162,39 @@ export interface SmartSuggestion {
   message: string;
   action?: string;
   taskId?: string;
+}
+
+export interface TimeSlot {
+  start: string; // HH:MM format
+  end: string; // HH:MM format
+  duration: number; // in hours
+}
+
+export interface ConflictCheckResult {
+  isValid: boolean;
+  conflicts: Array<{
+    type: 'session_overlap' | 'commitment_conflict' | 'daily_limit_exceeded' | 'invalid_time_slot';
+    message: string;
+    conflictingItem?: StudySession | FixedCommitment;
+  }>;
+  suggestedAlternatives?: TimeSlot[];
+}
+
+export interface RedistributionOptions {
+  prioritizeMissedSessions: boolean;
+  respectDailyLimits: boolean;
+  allowWeekendOverflow: boolean;
+  maxRedistributionDays: number;
+}
+
+export interface RedistributionResult {
+  redistributedSessions: StudySession[];
+  failedSessions: Array<{
+    session: StudySession;
+    reason: string;
+  }>;
+  conflictsResolved: number;
+  totalSessionsMoved: number;
 }
 
 export interface UserReschedule {
