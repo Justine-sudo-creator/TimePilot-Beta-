@@ -280,9 +280,11 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 dark:bg-gray-900 dark:shadow-gray-900">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2 dark:text-white">
-        <SettingsIcon className="text-blue-600 dark:text-blue-400" size={20} />
+    <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 rounded-3xl shadow-2xl shadow-purple-500/10 p-6 border border-white/20 dark:border-white/10">
+      <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center space-x-3">
+        <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+          <SettingsIcon className="text-white" size={18} />
+        </div>
         <span>Your Study Preferences</span>
       </h2>
 
