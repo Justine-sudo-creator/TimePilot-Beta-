@@ -38,6 +38,13 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
   const [, setShowPlanStaleNotif] = useState(true);
   // Smart assistant state
   const [showSmartAssistant, setShowSmartAssistant] = useState(false);
+  // Enhanced redistribution state
+  const [redistributionInProgress, setRedistributionInProgress] = useState(false);
+  const [redistributionResults, setRedistributionResults] = useState<{
+    success: boolean;
+    message: string;
+    details?: { redistributed: number; failed: number; conflictsResolved: number };
+  } | null>(null);
   // Persist showWarnings in localStorage
   const [showWarnings, setShowWarningsRaw] = useState(() => {
     const saved = localStorage.getItem('timepilot-showWarnings');
