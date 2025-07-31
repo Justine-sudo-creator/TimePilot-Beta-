@@ -535,6 +535,11 @@ const Settings: React.FC<SettingsProps> = ({
                   <span className="text-sm text-gray-700 dark:text-gray-200">Balanced Priority <span className="text-xs text-gray-500 dark:text-gray-400">(priority-based even distribution)</span></span>
             </label>
               </div>
+              <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                <div><strong>Eisenhower:</strong> Tasks scheduled by importance & urgency first</div>
+                <div><strong>Even Distribution:</strong> All tasks spread equally across available time</div>
+                <div><strong>Balanced Priority:</strong> Important tasks get priority but are evenly distributed within their tier</div>
+              </div>
             </div>
           </div>
         </div>
