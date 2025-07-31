@@ -168,27 +168,19 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
         </div>
       )}
 
-      {/* Regenerate Plan Prompt */}
-      {hasMissedSessions && showRegeneratePrompt && !hasManualReschedules && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg flex items-center justify-between dark:bg-yellow-900/20 dark:border-yellow-700">
+      {/* Positive reinforcement for completed sessions */}
+      {hasCompletedSessions && doneCount >= 3 && showRegeneratePrompt && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg flex items-center justify-between dark:bg-green-900/20 dark:border-green-700">
           <div>
-            <span className="font-semibold text-yellow-800 dark:text-yellow-200">Missed sessions detected.</span>
-            <span className="ml-2 text-yellow-700 dark:text-yellow-100">Regenerate your study plan to get back on track!</span>
+            <span className="font-semibold text-green-800 dark:text-green-200">Great progress!</span>
+            <span className="ml-2 text-green-700 dark:text-green-100">You've completed {doneCount} study session{doneCount > 1 ? 's' : ''}. Keep up the momentum! 🎉</span>
           </div>
-          <div className="flex items-center space-x-2">
           <button
-              onClick={() => setShowRegeneratePrompt(false)}
-              className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200"
-            >
-              <XCircle size={20} />
-          </button>
-          <button
-              onClick={() => onGenerateStudyPlan?.()}
-              className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors dark:bg-yellow-800 dark:text-yellow-200 dark:hover:bg-yellow-700"
+            onClick={() => setShowRegeneratePrompt(false)}
+            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
           >
-              Regenerate
+            <X size={20} />
           </button>
-          </div>
         </div>
       )}
 
