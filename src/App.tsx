@@ -1589,21 +1589,21 @@ function App() {
                         </div>
                         <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">TimePilot</div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                         <button
-                            className={`flex items-center rounded-full p-2 transition-colors z-50 ${
+                            className={`flex items-center rounded-2xl p-3 backdrop-blur-md transition-all duration-300 z-50 ${
                               hasUnscheduled ?
-                                notificationPriority === 'critical' ? 'bg-red-300 shadow-lg animate-pulse' :
-                                notificationPriority === 'high' ? 'bg-orange-300 shadow-lg animate-bounce' :
-                                'bg-yellow-300 shadow-lg'
-                              : 'bg-gray-200'
+                                notificationPriority === 'critical' ? 'bg-red-500/20 border border-red-300/50 shadow-lg shadow-red-500/25 animate-pulse' :
+                                notificationPriority === 'high' ? 'bg-orange-500/20 border border-orange-300/50 shadow-lg shadow-orange-500/25 animate-bounce' :
+                                'bg-yellow-500/20 border border-yellow-300/50 shadow-lg shadow-yellow-500/25'
+                              : 'bg-white/10 border border-white/20'
                             } ${
                               hasUnscheduled ?
-                                notificationPriority === 'critical' ? 'text-red-700' :
-                                notificationPriority === 'high' ? 'text-orange-700' :
-                                'text-yellow-700'
+                                notificationPriority === 'critical' ? 'text-red-600 dark:text-red-400' :
+                                notificationPriority === 'high' ? 'text-orange-600 dark:text-orange-400' :
+                                'text-yellow-600 dark:text-yellow-400'
                               : 'text-gray-400'
-                            } ${hasUnscheduled ? '' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
+                            } ${hasUnscheduled ? 'hover:scale-105' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
                             title={showSuggestionsPanel ? 'Hide Study Plan Optimization' :
                               hasUnscheduled ?
                                 `Show Study Plan Optimization (${unscheduledTasks.length} task${unscheduledTasks.length > 1 ? 's' : ''} need attention)` :
@@ -2126,7 +2126,7 @@ function App() {
                                                     onClick={() => window.open('https://paypal.me/yourusername', '_blank')}
                                                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                                                 >
-                                                    <span className="text-lg">����</span>
+                                                    <span className="text-lg">💙</span>
                                                     <span>PayPal</span>
                                                 </button>
                                                 <button
