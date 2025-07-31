@@ -404,8 +404,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
               <div className="space-y-3">
                 {todaysPlan.plannedTasks
                   .filter(session => {
-                    const sessionStatus = checkSessionStatus(session, todaysPlan.date);
-                    return sessionStatus !== 'missed' && session.status !== 'skipped' && !session.done && session.status !== 'completed';
+                    // Show all active sessions (not completed or skipped)
+                    return session.status !== 'skipped' && !session.done && session.status !== 'completed';
                   })
                   .map((session, index) => {
                   const task = tasks.find(t => t.id === session.taskId);
@@ -413,9 +413,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                   const isDone = session.done;
                   const isCompleted = session.status === 'completed';
                   
-                  // Check session status to detect missed sessions
+                  // Check session status for display purposes only
                   const sessionStatusResult = checkSessionStatus(session, todaysPlan.date);
-                  const isMissed = sessionStatusResult === 'missed';
                   const isOverdue = sessionStatusResult === 'overdue';
                   const isRescheduled = session.isManualOverride;
                   
@@ -509,8 +508,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                   return (
                     <div 
                       key={index} 
-                      className={`p-4 border-l-4 rounded-lg flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring} ${!isDone && !isCompleted && !isMissed ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
-                      onClick={() => !isDone && !isCompleted && !isMissed && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
+                      className={`p-4 border-l-4 rounded-lg flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring} ${!isDone && !isCompleted ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
+                      onClick={() => !isDone && !isCompleted && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
                     >
                       <div className={`flex-1 flex items-center ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
                         {statusIcon}
@@ -549,7 +548,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                         <span className={`px-2 py-1 text-xs rounded-full ${importanceStyle.badge} ml-4`}>Important</span>
                       )}
                       {/* Task session progress bar */}
-                      <div className={`w-32 ml-4 ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
+                      <div className={`w-32 ml-4 ${isDone || isCompleted ? 'pointer-events-none' : ''}`}>
                         <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                           <div
                             className={`h-2 rounded-full transition-all duration-300 ${currentStatusColors.progress}`}
@@ -767,8 +766,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
               <div className="text-xs text-gray-600 dark:text-gray-300">Done{totalSessions > 0 ? ` (${((doneCount/totalSessions)*100).toFixed(0)}%)` : ''}</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-red-600 dark:text-red-400">{missedCount}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-300">Missed{totalSessions > 0 ? ` (${((missedCount/totalSessions)*100).toFixed(0)}%)` : ''}</div>
+              <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{totalSessions - doneCount - skippedCount}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">Remaining{totalSessions > 0 ? ` (${(((totalSessions - doneCount - skippedCount)/totalSessions)*100).toFixed(0)}%)` : ''}</div>
             </div>
             <div>
               <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{skippedCount}</div>
