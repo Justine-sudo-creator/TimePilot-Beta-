@@ -322,8 +322,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             
             // Split if crosses midnight
             splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
+              const uniqueId = `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${(modifiedSession?.startTime || commitment.startTime).replace(':', '')}-${idx}`;
               calendarEvents.push({
-                id: `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${idx}`,
+                id: uniqueId,
                 title: modifiedSession?.title || commitment.title,
                 start,
                 end,
