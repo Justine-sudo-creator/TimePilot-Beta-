@@ -452,8 +452,17 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
                     onClick={() => handleSkipMissedSession(planDate, session.sessionNumber || 0, task.id)}
                     className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors duration-200 dark:bg-yellow-900 dark:text-yellow-200 dark:hover:bg-yellow-800"
                   >
-                    Skip
+                    Skip All
                   </button>
+                  {session.allocatedHours > 0.5 && (
+                    <button
+                      onClick={() => handleSkipMissedSession(planDate, session.sessionNumber || 0, task.id, session.allocatedHours / 2)}
+                      className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors duration-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800"
+                      title={`Skip ${formatTime(session.allocatedHours / 2)} and reschedule the rest`}
+                    >
+                      Skip Half
+                    </button>
+                  )}
                 </div>
               </div>
             ))
