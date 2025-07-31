@@ -474,10 +474,6 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                     currentSessionStatus = 'completed';
                     statusIcon = <CheckCircle2 className={`${statusColors.completed.icon} mr-2`} size={22} />;
                     statusText = 'Completed';
-                  } else if (isMissed) {
-                    currentSessionStatus = 'missed';
-                    statusIcon = <XCircle className={`${statusColors.missed.icon} mr-2`} size={22} />;
-                    statusText = 'Missed';
                   } else if (isOverdue) {
                     currentSessionStatus = 'overdue';
                     statusIcon = <AlertTriangle className={`${statusColors.overdue.icon} mr-2`} size={22} />;
