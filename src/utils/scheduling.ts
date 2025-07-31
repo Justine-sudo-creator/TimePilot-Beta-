@@ -339,7 +339,7 @@ export const generateNewStudyPlan = (
         let distributedThisRound = 0;
         
         // Calculate optimal distribution for remaining hours
-        const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution);
+        const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution, settings);
         
         // Distribute optimal sessions to available days
         for (let i = 0; i < optimalSessions.length && i < availableDaysForRedistribution.length; i++) {
