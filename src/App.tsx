@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2, Menu, X, HelpCircle } from 'lucide-react';
 import { Task, StudyPlan, UserSettings, FixedCommitment, StudySession, TimerState } from './types';
 import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback, checkCommitmentConflicts, redistributeMissedSessionsEnhanced } from './utils/scheduling';
+import { getAccurateUnscheduledTasks, shouldShowNotifications, getNotificationPriority } from './utils/enhanced-notifications';
 import { RedistributionOptions } from './types';
 
 import Dashboard from './components/Dashboard';
@@ -1563,18 +1564,10 @@ function App() {
         { id: 'settings', label: 'Settings', icon: SettingsIcon }
     ];
 
-    const hasUnscheduled = getUnscheduledMinutesForTasks(tasks, (() => {
-      const taskScheduledHours: Record<string, number> = {};
-      studyPlans.forEach(plan => {
-        plan.plannedTasks.forEach(session => {
-          // Skip sessions that are marked as skipped - they shouldn't count towards scheduled hours
-          if (session.status !== 'skipped') {
-            taskScheduledHours[session.taskId] = (taskScheduledHours[session.taskId] || 0) + session.allocatedHours;
-          }
-        });
-      });
-      return taskScheduledHours;
-    })(), settings).length > 0;
+    // Use enhanced notification system for more accurate unscheduled detection
+    const unscheduledTasks = getAccurateUnscheduledTasks(tasks, studyPlans, settings);
+    const hasUnscheduled = shouldShowNotifications(unscheduledTasks);
+    const notificationPriority = getNotificationPriority(unscheduledTasks);
 
     return (
         <ErrorBoundary>
@@ -1585,13 +1578,33 @@ function App() {
                     <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">TimePilot</div>
                     <div className="flex items-center space-x-2">
                         <button
-                            className={`flex items-center rounded-full p-2 transition-colors z-50 ${hasUnscheduled ? 'bg-yellow-300 shadow-lg animate-bounce' : 'bg-gray-200'} ${hasUnscheduled ? 'text-yellow-700' : 'text-gray-400'} ${hasUnscheduled ? '' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
-                            title={showSuggestionsPanel ? 'Hide Optimization Suggestions' : 'Show Optimization Suggestions'}
+                            className={`flex items-center rounded-full p-2 transition-colors z-50 ${
+                              hasUnscheduled ?
+                                notificationPriority === 'critical' ? 'bg-red-300 shadow-lg animate-pulse' :
+                                notificationPriority === 'high' ? 'bg-orange-300 shadow-lg animate-bounce' :
+                                'bg-yellow-300 shadow-lg'
+                              : 'bg-gray-200'
+                            } ${
+                              hasUnscheduled ?
+                                notificationPriority === 'critical' ? 'text-red-700' :
+                                notificationPriority === 'high' ? 'text-orange-700' :
+                                'text-yellow-700'
+                              : 'text-gray-400'
+                            } ${hasUnscheduled ? '' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
+                            title={showSuggestionsPanel ? 'Hide Study Plan Optimization' :
+                              hasUnscheduled ?
+                                `Show Study Plan Optimization (${unscheduledTasks.length} task${unscheduledTasks.length > 1 ? 's' : ''} need attention)` :
+                                'No optimization suggestions'
+                            }
                             onClick={() => hasUnscheduled && setShowSuggestionsPanel(v => !v)}
                             style={{ outline: 'none', border: 'none' }}
                             disabled={!hasUnscheduled}
                         >
-                            <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6`} fill={hasUnscheduled ? '#fde047' : 'none'} />
+                            <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6`} fill={hasUnscheduled ?
+                              notificationPriority === 'critical' ? '#dc2626' :
+                              notificationPriority === 'high' ? '#ea580c' :
+                              '#fde047'
+                            : 'none'} />
                         </button>
                         <button
                             className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
