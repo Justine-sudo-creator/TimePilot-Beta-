@@ -433,47 +433,7 @@ export const generateNewStudyPlan = (
       }
     };
 
-    // Helper function to optimize session distribution by trying to create larger sessions
-    const optimizeSessionDistribution = (task: Task, totalHours: number, daysForTask: string[]) => {
-      const minSessionLength = (settings.minSessionLength || 15) / 60; // in hours
-      const maxSessionLength = Math.min(4, settings.dailyAvailableHours); // Cap at 4 hours or daily limit
-      
-      // Try to create fewer, larger sessions
-      let optimalSessions: number[] = [];
-      let remainingHours = totalHours;
-      
-      // Calculate how many sessions we can create with minimum length
-      const maxSessionsWithMinLength = Math.floor(totalHours / minSessionLength);
-      
-      // Determine optimal number of sessions
-      let numSessions = Math.min(daysForTask.length, maxSessionsWithMinLength);
-      
-      if (numSessions === 0) {
-        // If we can't meet minimum session length, create one session per day
-        numSessions = daysForTask.length;
-      }
-      
-      // Create sessions with preference for larger sessions
-      for (let i = 0; i < numSessions && remainingHours > 0; i++) {
-        const sessionLength = Math.min(
-          remainingHours / (numSessions - i), // Distribute remaining hours evenly
-          maxSessionLength, // Don't exceed max session length
-          remainingHours // Don't exceed remaining hours
-        );
-        
-        if (sessionLength >= minSessionLength) {
-          optimalSessions.push(sessionLength);
-          remainingHours -= sessionLength;
-        }
-      }
-      
-      // If we have remaining hours, add them to the first session
-      if (remainingHours > 0 && optimalSessions.length > 0) {
-        optimalSessions[0] += remainingHours;
-      }
-      
-      return optimalSessions;
-    };
+
 
     // For each task, distribute hours evenly across available days until deadline
     for (const task of tasksEven) {
