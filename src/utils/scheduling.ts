@@ -1080,6 +1080,60 @@ export const findNextAvailableStartTime = (
   return studyWindowStart;
 };
 
+/**
+ * Enhanced redistribution function using the new conflict-free system
+ */
+export const redistributeMissedSessionsEnhanced = (
+  studyPlans: StudyPlan[],
+  settings: UserSettings,
+  fixedCommitments: FixedCommitment[],
+  tasks: Task[],
+  options: RedistributionOptions = {
+    prioritizeMissedSessions: true,
+    respectDailyLimits: true,
+    allowWeekendOverflow: false,
+    maxRedistributionDays: 14
+  }
+): RedistributionResult => {
+  const engine = createEnhancedRedistributionEngine(settings, fixedCommitments);
+  return engine.redistributeMissedSessions(studyPlans, tasks, options);
+};
+
+/**
+ * Enhanced skip session function with partial skip support
+ */
+export const skipSessionEnhanced = (
+  studyPlans: StudyPlan[],
+  planDate: string,
+  sessionNumber: number,
+  taskId: string,
+  options: {
+    partialHours?: number;
+    reason?: 'user_choice' | 'conflict' | 'overload';
+  } = {}
+): boolean => {
+  const engine = createEnhancedRedistributionEngine(
+    { dailyAvailableHours: 8, workDays: [1,2,3,4,5], bufferDays: 0, minSessionLength: 15, bufferTimeBetweenSessions: 0, shortBreakDuration: 5, longBreakDuration: 15, maxConsecutiveHours: 4, studyWindowStartHour: 6, studyWindowEndHour: 23, avoidTimeRanges: [], weekendStudyHours: 6, autoCompleteSessions: false, enableNotifications: true },
+    []
+  );
+  return engine.skipSession(studyPlans, planDate, sessionNumber, taskId, options);
+};
+
+/**
+ * Validate time slot for conflicts
+ */
+export const validateTimeSlot = (
+  date: string,
+  startTime: string,
+  endTime: string,
+  existingSessions: StudySession[],
+  settings: UserSettings,
+  fixedCommitments: FixedCommitment[]
+) => {
+  const checker = createConflictChecker(settings, fixedCommitments);
+  return checker.validateTimeSlot(date, startTime, endTime, existingSessions);
+};
+
 export const moveMissedSessions = (
   studyPlans: StudyPlan[],
   settings: UserSettings,
