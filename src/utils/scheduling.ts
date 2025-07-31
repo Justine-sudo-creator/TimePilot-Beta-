@@ -496,7 +496,7 @@ export const generateNewStudyPlan = (
       let totalHours = task.estimatedHours;
       
       // Use optimized session distribution instead of simple even distribution
-      const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask);
+      const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask, settings);
       
 
       // Assign sessions to available days, distributing optimally
