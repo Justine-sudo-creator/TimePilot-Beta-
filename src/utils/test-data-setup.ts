@@ -152,5 +152,131 @@ export const setupTestData = () => {
   window.location.reload();
 };
 
-// Expose function globally for easy access in browser console
+/**
+ * Creates test data specifically for demonstrating balanced priority mode
+ */
+export const createBalancedPriorityTestData = () => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  const nextMonth = new Date(today);
+  nextMonth.setDate(nextMonth.getDate() + 30);
+
+  const testTasks: Task[] = [
+    // Q1: Important & Urgent
+    {
+      id: 'urgent-important-1',
+      title: 'Final Exam Prep',
+      description: 'Prepare for tomorrow\'s final exam',
+      deadline: tomorrow.toISOString(),
+      importance: true,
+      estimatedHours: 4,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Study'
+    },
+    {
+      id: 'urgent-important-2',
+      title: 'Project Deadline',
+      description: 'Complete urgent project due soon',
+      deadline: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+      importance: true,
+      estimatedHours: 6,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Work'
+    },
+
+    // Q2: Important but Not Urgent
+    {
+      id: 'important-1',
+      title: 'Research Paper',
+      description: 'Work on important research paper',
+      deadline: nextWeek.toISOString(),
+      importance: true,
+      estimatedHours: 8,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Study'
+    },
+    {
+      id: 'important-2',
+      title: 'Skill Development',
+      description: 'Learn new programming language',
+      deadline: nextMonth.toISOString(),
+      importance: true,
+      estimatedHours: 12,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Personal'
+    },
+
+    // Q3: Urgent but Not Important
+    {
+      id: 'urgent-1',
+      title: 'Administrative Task',
+      description: 'Complete urgent paperwork',
+      deadline: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      importance: false,
+      estimatedHours: 2,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Administrative'
+    },
+
+    // Q4: Neither Urgent nor Important
+    {
+      id: 'regular-1',
+      title: 'Organize Files',
+      description: 'Clean up computer files',
+      deadline: nextMonth.toISOString(),
+      importance: false,
+      estimatedHours: 3,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Personal'
+    },
+    {
+      id: 'regular-2',
+      title: 'Read Articles',
+      description: 'Catch up on reading',
+      deadline: nextMonth.toISOString(),
+      importance: false,
+      estimatedHours: 4,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      category: 'Personal'
+    }
+  ];
+
+  return { testTasks, testStudyPlans: [] };
+};
+
+export const setupBalancedPriorityTest = () => {
+  const { testTasks } = createBalancedPriorityTestData();
+
+  // Save to localStorage
+  localStorage.setItem('timepilot-tasks', JSON.stringify(testTasks));
+  localStorage.setItem('timepilot-studyPlans', JSON.stringify([]));
+
+  // Also set balanced priority mode in settings
+  const currentSettings = JSON.parse(localStorage.getItem('timepilot-settings') || '{}');
+  const updatedSettings = {
+    ...currentSettings,
+    studyPlanMode: 'balanced'
+  };
+  localStorage.setItem('timepilot-settings', JSON.stringify(updatedSettings));
+
+  console.log('Balanced priority test data loaded:');
+  console.log('Tasks:', testTasks);
+  console.log('Mode set to: balanced');
+
+  // Trigger a page reload to apply the new data
+  window.location.reload();
+};
+
+// Expose functions globally for easy access in browser console
 (window as any).setupTestData = setupTestData;
+(window as any).setupBalancedPriorityTest = setupBalancedPriorityTest;
