@@ -1572,10 +1572,23 @@ function App() {
     return (
         <ErrorBoundary>
             <div className={`${darkMode ? 'dark' : ''}`}>
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-                {/* Navbar/Header */}
-                <header className="w-full flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-gray-900 shadow-md z-40">
-                    <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">TimePilot</div>
+                {/* Animated background with particles */}
+                <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-pink-50 to-cyan-50 dark:from-slate-900 dark:via-purple-900/20 dark:to-slate-900"></div>
+                    <div className="absolute top-0 left-1/4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+                    <div className="absolute top-0 right-1/4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-8 left-1/3 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+                </div>
+
+                <div className="min-h-screen relative">
+                {/* Glassmorphic Header */}
+                <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 backdrop-blur-md bg-white/10 dark:bg-black/10 border-b border-white/20 dark:border-white/10 z-40 sticky top-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <span className="text-white font-bold text-lg">⚡</span>
+                        </div>
+                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">TimePilot</div>
+                    </div>
                     <div className="flex items-center space-x-2">
                         <button
                             className={`flex items-center rounded-full p-2 transition-colors z-50 ${
@@ -2113,7 +2126,7 @@ function App() {
                                                     onClick={() => window.open('https://paypal.me/yourusername', '_blank')}
                                                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                                                 >
-                                                    <span className="text-lg">💙</span>
+                                                    <span className="text-lg">����</span>
                                                     <span>PayPal</span>
                                                 </button>
                                                 <button
