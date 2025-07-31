@@ -606,18 +606,18 @@ const Settings: React.FC<SettingsProps> = ({
 
 
         {/* Save Button */}
-          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-6 border-t border-white/20 dark:border-white/10">
           <button
             type="submit"
               disabled={validationMessages.some(msg => msg.type === 'error')}
-              className={`w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              className={`w-full inline-flex justify-center py-4 px-6 border-none shadow-lg text-sm font-semibold rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all duration-300 ${
                 validationMessages.some(msg => msg.type === 'error')
                   ? 'bg-gray-400 cursor-not-allowed dark:bg-gray-600'
-                  : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
+                  : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-105'
               }`}
           >
             {validationMessages.some(msg => msg.type === 'error') && (validateMissedSessions().isValid === false || validateRescheduledSessions().isValid === false)
-              ? 'Handle Sessions First' 
+              ? 'Handle Sessions First'
               : 'Save Settings'
             }
           </button>
