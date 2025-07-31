@@ -17,6 +17,7 @@ import SuggestionsPanel from './components/SuggestionsPanel';
 import InteractiveTutorial from './components/InteractiveTutorial';
 import TutorialButton from './components/TutorialButton';
 import ErrorBoundary from './components/ErrorBoundary';
+import './utils/test-data-setup'; // Import test data setup for testing
 
 function App() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'plan' | 'timer' | 'calendar' | 'commitments' | 'settings'>('dashboard');
