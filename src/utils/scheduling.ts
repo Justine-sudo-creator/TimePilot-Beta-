@@ -1087,6 +1087,62 @@ export const moveMissedSessions = (
   const today = getLocalDateString();
   
   // Find all missed sessions and sort by priority
+  // Pre-processing: Split overly long combined sessions to improve redistribution success
+  updatedPlans.forEach(plan => {
+    const sessionsToSplit: StudySession[] = [];
+    const sessionsToRemove: number[] = [];
+    
+    plan.plannedTasks.forEach((session, index) => {
+      const status = checkSessionStatus(session, plan.date);
+      // If a missed session is too long (likely combined), split it for better redistribution
+      if (status === 'missed' && session.allocatedHours > 3 && !session.originalTime) {
+        console.log(`Pre-splitting large missed session: ${session.taskId} (${session.allocatedHours}h)`);
+        
+        // Split into 2-hour chunks
+        const chunkDuration = 2;
+        let remainingHours = session.allocatedHours;
+        let chunkNumber = 1;
+        
+        while (remainingHours > 0) {
+          const chunkHours = Math.min(remainingHours, chunkDuration);
+          const splitSession = {...session};
+          splitSession.allocatedHours = chunkHours;
+          splitSession.sessionNumber = (session.sessionNumber || 1) + (chunkNumber - 1) * 10;
+          
+          // Calculate time for this chunk (approximate)
+          const [startHour, startMinute] = session.startTime.split(':').map(Number);
+          const chunkStartMinutes = startHour * 60 + startMinute + (chunkNumber - 1) * chunkDuration * 60;
+          const chunkStartHour = Math.floor(chunkStartMinutes / 60);
+          const chunkStartMin = chunkStartMinutes % 60;
+          const chunkEndMinutes = chunkStartMinutes + chunkHours * 60;
+          const chunkEndHour = Math.floor(chunkEndMinutes / 60);
+          const chunkEndMin = chunkEndMinutes % 60;
+          
+          splitSession.startTime = `${chunkStartHour.toString().padStart(2, '0')}:${chunkStartMin.toString().padStart(2, '0')}`;
+          splitSession.endTime = `${chunkEndHour.toString().padStart(2, '0')}:${chunkEndMin.toString().padStart(2, '0')}`;
+          
+          sessionsToSplit.push(splitSession);
+          remainingHours -= chunkHours;
+          chunkNumber++;
+        }
+        
+        sessionsToRemove.push(index);
+      }
+    });
+    
+    // Remove original large sessions and add split sessions
+    let removedHours = 0;
+    sessionsToRemove.reverse().forEach(index => {
+      removedHours += plan.plannedTasks[index].allocatedHours;
+      plan.plannedTasks.splice(index, 1);
+    });
+    plan.plannedTasks.push(...sessionsToSplit);
+    
+    // Update total study hours (should remain the same, but recalculate for accuracy)
+    const addedHours = sessionsToSplit.reduce((sum, session) => sum + session.allocatedHours, 0);
+    plan.totalStudyHours = Math.round((plan.totalStudyHours - removedHours + addedHours) * 60) / 60;
+  });
+
   const missedSessions: Array<{
     session: StudySession, 
     planDate: string, 
@@ -1312,10 +1368,19 @@ export const moveMissedSessions = (
     
     // Try to move all sessions for this task together
     for (const {session, planDate, planIndex} of taskSessions) {
-      const sessionDuration = session.allocatedHours;
+      // For redistribution, try to move the entire session first
+      // If it fails due to large duration, we'll split it later
+      let sessionDuration = session.allocatedHours;
       
       // Try to move the session
-      const moveResult = tryMoveSession(session, sessionDuration);
+      let moveResult = tryMoveSession(session, sessionDuration);
+      
+      // If the session is too long and couldn't be moved, try splitting it
+      if (!moveResult.success && sessionDuration > 2) {
+        console.log(`Large session (${sessionDuration}h) couldn't be moved, trying to split it`);
+        sessionDuration = Math.min(sessionDuration, 2); // Try with max 2 hours
+        moveResult = tryMoveSession(session, sessionDuration);
+      }
     
     if (moveResult.success && moveResult.targetDate && moveResult.targetTime) {
       // Create new session
@@ -1324,6 +1389,7 @@ export const moveMissedSessions = (
       newSession.originalDate = planDate;
       newSession.status = 'scheduled';
       newSession.startTime = moveResult.targetTime;
+      newSession.allocatedHours = sessionDuration; // Use the actual moved duration
       // Add redistribution timestamp to track when session was moved
       newSession.rescheduledAt = new Date().toISOString();
       
@@ -1359,6 +1425,44 @@ export const moveMissedSessions = (
       console.log(`Added session to plan ${moveResult.targetDate}, plan now has ${targetPlan.plannedTasks.length} sessions`);
       
       movedSessions.push(newSession);
+      
+      // If we only moved part of the session, create a remaining session for the leftover hours
+      const remainingHours = session.allocatedHours - sessionDuration;
+      if (remainingHours > 0.25) { // Only create remainder if it's substantial (15+ minutes)
+        console.log(`Creating remainder session for ${remainingHours}h of unmoved time`);
+        const remainderSession = {...session};
+        remainderSession.allocatedHours = remainingHours;
+        remainderSession.sessionNumber = (session.sessionNumber || 1) + 100; // Give it a high session number
+        remainderSession.status = 'scheduled'; // Mark as scheduled so it can be rescheduled later
+        
+        // Try to place remainder session in the target plan if there's space
+        const availableHoursInTarget = targetPlan.availableHours - targetPlan.totalStudyHours;
+        if (availableHoursInTarget >= remainingHours) {
+          // Add remainder to same day
+          const [endHour, endMinute] = newSession.endTime.split(':').map(Number);
+          const remainderStartMinutes = endHour * 60 + endMinute + 15; // 15 min break
+          const remainderStartHour = Math.floor(remainderStartMinutes / 60);
+          const remainderStartMin = remainderStartMinutes % 60;
+          
+          if (remainderStartHour < 23) { // Make sure it fits in the day
+            remainderSession.startTime = `${remainderStartHour.toString().padStart(2, '0')}:${remainderStartMin.toString().padStart(2, '0')}`;
+            const remainderEndMinutes = remainderStartMinutes + Math.round(remainingHours * 60);
+            const remainderEndHour = Math.floor(remainderEndMinutes / 60);
+            const remainderEndMin = remainderEndMinutes % 60;
+            remainderSession.endTime = `${remainderEndHour.toString().padStart(2, '0')}:${remainderEndMin.toString().padStart(2, '0')}`;
+            
+            targetPlan.plannedTasks.push(remainderSession);
+            targetPlan.totalStudyHours = Math.round((targetPlan.totalStudyHours + remainingHours) * 60) / 60;
+            console.log(`Added remainder session to same plan`);
+          } else {
+            // Add to failed sessions to be handled later
+            failedSessions.push(remainderSession);
+          }
+        } else {
+          // Add to failed sessions to be redistributed later
+          failedSessions.push(remainderSession);
+        }
+      }
         
       // Remove session from original location using a more robust method
       const originalPlan = updatedPlans[planIndex];
