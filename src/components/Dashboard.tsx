@@ -80,24 +80,21 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
   const isTodayWorkDay = workDays.includes(todayDayOfWeek);
 
   // --- Session Analytics ---
-  let doneCount = 0, missedCount = 0, skippedCount = 0, totalSessions = 0;
+  let doneCount = 0, skippedCount = 0, totalSessions = 0;
   filteredPlans.forEach(plan => {
     plan.plannedTasks.forEach(session => {
       totalSessions++;
-      // Use checkSessionStatus for proper detection of missed sessions
-      const sessionStatus = checkSessionStatus(session, plan.date);
-      if (session.status === 'completed' || session.done || sessionStatus === 'completed') {
+      // Only count completed and skipped sessions for positive metrics
+      if (session.status === 'completed' || session.done) {
         doneCount++;
       } else if (session.status === 'skipped') {
         skippedCount++;
-      } else if (sessionStatus === 'missed') {
-        missedCount++;
       }
     });
   });
 
-  // Show regenerate prompt if there are missed sessions
-  const hasMissedSessions = missedCount > 0;
+  // Focus on positive metrics instead of missed sessions
+  const hasCompletedSessions = doneCount > 0;
 
   // Check for manually rescheduled sessions
   const hasManualReschedules = studyPlans.some(plan => 
