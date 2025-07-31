@@ -2164,7 +2164,7 @@ export const redistributeAfterTaskDeletion = (
     }
     
     let totalHours = task.estimatedHours;
-    const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask);
+    const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask, settings);
     
     let unscheduledHours = 0;
     for (let i = 0; i < sessionLengths.length && i < daysForTask.length; i++) {
