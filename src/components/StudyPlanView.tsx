@@ -15,6 +15,7 @@ interface StudyPlanViewProps {
   onAddFixedCommitment?: (commitment: FixedCommitment) => void; // NEW PROP
   onSkipMissedSession: (planDate: string, sessionNumber: number, taskId: string) => void;
   onRedistributeMissedSessions?: () => void; // NEW PROP for redistribution
+  onEnhancedRedistribution?: () => void; // Enhanced redistribution prop
 }
 
 // Force warnings UI to be hidden for all users on first load unless they have a preference
