@@ -2017,7 +2017,7 @@ export const redistributeAfterTaskDeletion = (
       }
       
       let distributedThisRound = 0;
-      const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution);
+      const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution, settings);
       
       for (let i = 0; i < optimalSessions.length && i < availableDaysForRedistribution.length; i++) {
         const date = availableDaysForRedistribution[i];
