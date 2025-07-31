@@ -421,7 +421,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
           <div className="space-y-3">
                         {missedSessions.length > 0 ? (
               missedSessions.map(({planDate, session, task}, idx) => (
-                <div key={planDate + '-' + session.sessionNumber + '-' + task.id} 
+                <div key={`missed-${planDate}-${session.sessionNumber || 0}-${task.id}-${session.startTime || ''}-${idx}`} 
                      className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
