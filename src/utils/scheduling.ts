@@ -63,18 +63,14 @@ export const checkSessionStatus = (session: StudySession, planDate: string): 'sc
     return 'completed'; // Treat skipped sessions as completed for display purposes
   }
 
+  // Check if session was redistributed (has originalTime and originalDate)
   if (session.originalTime && session.originalDate) {
+    // This session was moved from its original position
     return 'rescheduled';
   }
 
   // Only mark as missed if not completed and from past date
-  // AND the session was originally scheduled for that past date (not redistributed there)
   if (planDate < today) {
-    // If session has original time/date, it was redistributed - don't mark as missed
-    if (session.originalTime && session.originalDate) {
-      console.log(`Session redistributed to past date ${planDate} - not marking as missed`);
-      return 'scheduled'; // Treat redistributed sessions as scheduled
-    }
     console.log(`Session from past date ${planDate} marked as MISSED`);
     return 'missed';
   }
@@ -1103,18 +1099,23 @@ export const moveMissedSessions = (
   updatedPlans.forEach((plan, planIndex) => {
     plan.plannedTasks.forEach((session, sessionIndex) => {
       const status = checkSessionStatus(session, plan.date);
-      if (status === 'missed') {
+      // Only redistribute sessions that are truly missed and haven't been redistributed before
+      if (status === 'missed' && !session.originalTime && !session.originalDate) {
         // Calculate priority based on task importance and deadline
         const task = tasks.find(t => t.id === session.taskId);
         let priority = 0;
         if (task) {
           priority += task.importance ? 1000 : 0; // Important tasks get high priority
-          const daysUntilDeadline = (new Date(task.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
+          const deadline = new Date(task.deadline);
+          const now = new Date();
+          const daysUntilDeadline = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
           // For past deadlines, give them very high priority to ensure they get redistributed
           if (daysUntilDeadline < 0) {
-            priority += 2000; // Very high priority for past deadlines
+            priority += 2000 + Math.abs(daysUntilDeadline); // Higher priority for older missed deadlines
           } else {
-            priority += Math.max(0, 100 - daysUntilDeadline); // Closer deadlines get higher priority
+            // Closer deadlines get higher priority, but ensure non-negative values
+            priority += Math.max(0, Math.min(100, 100 - daysUntilDeadline));
           }
         }
         
@@ -1323,6 +1324,8 @@ export const moveMissedSessions = (
       newSession.originalDate = planDate;
       newSession.status = 'scheduled';
       newSession.startTime = moveResult.targetTime;
+      // Add redistribution timestamp to track when session was moved
+      newSession.rescheduledAt = new Date().toISOString();
       
       // Calculate end time
       const [startHour, startMinute] = moveResult.targetTime.split(':').map(Number);
@@ -1358,16 +1361,22 @@ export const moveMissedSessions = (
       movedSessions.push(newSession);
         
       // Remove session from original location using a more robust method
-        const originalPlan = updatedPlans[planIndex];
+      const originalPlan = updatedPlans[planIndex];
       if (originalPlan) {
-        // Find the session by taskId and sessionNumber instead of using sessionIndex
+        // Find the exact session by comparing all relevant properties
         const sessionToRemoveIndex = originalPlan.plannedTasks.findIndex(s => 
-          s.taskId === session.taskId && s.sessionNumber === session.sessionNumber
+          s.taskId === session.taskId && 
+          s.sessionNumber === session.sessionNumber &&
+          s.startTime === session.startTime &&
+          s.endTime === session.endTime &&
+          !s.originalTime && !s.originalDate // Only remove original sessions, not redistributed ones
         );
         
         if (sessionToRemoveIndex !== -1) {
           console.log(`Removing session from original plan: ${planDate}, session: ${session.taskId}, sessionNumber: ${session.sessionNumber}`);
-          originalPlan.plannedTasks.splice(sessionToRemoveIndex, 1);
+          const removedSession = originalPlan.plannedTasks.splice(sessionToRemoveIndex, 1)[0];
+          // Update total study hours
+          originalPlan.totalStudyHours = Math.max(0, Math.round((originalPlan.totalStudyHours - removedSession.allocatedHours) * 60) / 60);
           console.log(`Original plan ${planDate} now has ${originalPlan.plannedTasks.length} sessions`);
         } else {
           console.warn(`Could not find original session to remove: planDate=${planDate}, taskId=${session.taskId}, sessionNumber=${session.sessionNumber}`);
@@ -2249,7 +2258,11 @@ const combineSessionsOnSameDayWithValidation = (studyPlans: StudyPlan[], setting
             startTime: firstSession.startTime,
             endTime: lastSession.endTime,
             allocatedHours: totalHours,
-            sessionNumber: 1 // Combined session gets number 1
+            sessionNumber: 1, // Combined session gets number 1
+            // Preserve redistribution metadata if any session was redistributed
+            originalTime: sessions.some(s => s.originalTime) ? sessions.find(s => s.originalTime)?.originalTime : undefined,
+            originalDate: sessions.some(s => s.originalDate) ? sessions.find(s => s.originalDate)?.originalDate : undefined,
+            rescheduledAt: sessions.some(s => s.rescheduledAt) ? sessions.find(s => s.rescheduledAt)?.rescheduledAt : undefined
           };
           
           combinedSessions.push(combinedSession);
