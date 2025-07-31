@@ -573,6 +573,32 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
           </div>
         </div>
       )}
+      {/* Test Data Setup (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">🧪 Testing Mode</h3>
+              <p className="text-xs text-yellow-600 dark:text-yellow-300 mt-1">
+                Click to create test data with missed sessions to test the enhanced redistribution system
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                if ((window as any).setupTestData) {
+                  (window as any).setupTestData();
+                } else {
+                  setNotificationMessage('Test data setup not available');
+                }
+              }}
+              className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors dark:bg-yellow-900 dark:text-yellow-200 dark:hover:bg-yellow-800"
+            >
+              Setup Test Data
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Generate Study Plan Button (only if no study plan exists and there are active tasks) */}
       {studyPlans.length === 0 && activeTasks.length > 0 && (
       <div className="flex justify-end space-x-3">
