@@ -102,7 +102,7 @@ export interface UserSettings {
   enableNotifications: boolean; // Enable study reminders and notifications
   userPrefersPressure?: boolean; // User prefers pressure mode for scheduling
   studyStyle?: 'steady' | 'pressure'; // Study style preference
-  studyPlanMode?: 'eisenhower' | 'even';
+  studyPlanMode?: 'eisenhower' | 'even' | 'balanced';
 }
 
 export interface TimerState {
