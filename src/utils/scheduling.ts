@@ -1,4 +1,5 @@
-import { Task, StudyPlan, StudySession, UserSettings, FixedCommitment, UserReschedule } from '../types';
+import { Task, StudyPlan, StudySession, UserSettings, FixedCommitment, UserReschedule, RedistributionOptions, RedistributionResult } from '../types';
+import { createEnhancedRedistributionEngine, createConflictChecker } from './enhanced-scheduling';
 
 // Utility functions
 export const getLocalDateString = (): string => {
@@ -2547,5 +2548,3 @@ export const testRedistributionImplementation = (
   
   return { testResults, issues };
 };
-
-
