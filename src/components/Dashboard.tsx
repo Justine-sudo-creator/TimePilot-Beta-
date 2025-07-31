@@ -139,7 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
       {/* Welcome Section */}
       {!hasCompletedTutorial && (
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-4 sm:p-6 shadow-lg">
-          <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome to TimePilot! 🚀</h1>
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome to TimePilot! ����</h1>
           <p className="text-blue-100 mb-4">
             Your intelligent study planning companion. Let's get you started with your first task!
           </p>
@@ -500,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                       className={`p-4 border-l-4 rounded-lg flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring} ${!isDone && !isCompleted ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
                       onClick={() => !isDone && !isCompleted && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
                     >
-                      <div className={`flex-1 flex items-center ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
+                      <div className={`flex-1 flex items-center ${isDone || isCompleted ? 'pointer-events-none' : ''}`}>
                         {statusIcon}
                         <div>
                           <div className="flex items-center space-x-2 mb-2">
@@ -530,7 +530,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                           </div>
                         </div>
                       </div>
-                      <div className={`text-sm text-gray-500 mb-1 ml-4 dark:text-gray-400 ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
+                      <div className={`text-sm text-gray-500 mb-1 ml-4 dark:text-gray-400 ${isDone || isCompleted ? 'pointer-events-none' : ''}`}>
                         Due: {new Date(task.deadline).toLocaleDateString()}
                       </div>
                       {task.importance && (
