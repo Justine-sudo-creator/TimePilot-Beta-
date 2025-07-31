@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3, XCircle } from 'lucide-react';
+import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3 } from 'lucide-react';
 import { Task, StudyPlan } from '../types';
 import { formatTime, getLocalDateString, checkSessionStatus } from '../utils/scheduling';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
