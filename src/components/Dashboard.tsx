@@ -138,7 +138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
     <div className="space-y-8">
       {/* Welcome Section */}
       {!hasCompletedTutorial && (
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-4 sm:p-6 shadow-lg">
+        <div className="backdrop-blur-md bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white rounded-3xl p-6 sm:p-8 shadow-2xl shadow-violet-500/25 border border-white/20 relative overflow-hidden">
           <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome to TimePilot! ����</h1>
           <p className="text-blue-100 mb-4">
             Your intelligent study planning companion. Let's get you started with your first task!
