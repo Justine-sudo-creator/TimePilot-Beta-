@@ -233,10 +233,83 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
     console.log('Missed session:', ms.task.title, 'on', ms.planDate, 'status:', checkSessionStatus(ms.session, ms.planDate));
   });
 
-  // Handler to skip a missed session
-  const handleSkipMissedSession = (planDate: string, sessionNumber: number, taskId: string) => {
-    onSkipMissedSession(planDate, sessionNumber, taskId);
-    setNotificationMessage('Session skipped! It will not be redistributed in future plans.');
+  // Enhanced handler to skip a missed session with partial skip support
+  const handleSkipMissedSession = (planDate: string, sessionNumber: number, taskId: string, partialHours?: number) => {
+    if (partialHours) {
+      // Use enhanced skip functionality for partial skipping
+      const success = skipSessionEnhanced(studyPlans, planDate, sessionNumber, taskId, {
+        partialHours,
+        reason: 'user_choice'
+      });
+
+      if (success) {
+        setNotificationMessage(`Partially skipped ${formatTime(partialHours)} of session. Remaining time will be rescheduled.`);
+        // Force a re-render by calling the parent's redistribution handler
+        if (onRedistributeMissedSessions) {
+          onRedistributeMissedSessions();
+        }
+      } else {
+        setNotificationMessage('Failed to partially skip session.');
+      }
+    } else {
+      // Full skip using original method
+      onSkipMissedSession(planDate, sessionNumber, taskId);
+      setNotificationMessage('Session skipped! It will not be redistributed in future plans.');
+    }
+  };
+
+  // Enhanced redistribution handler
+  const handleEnhancedRedistribution = async () => {
+    if (redistributionInProgress) return;
+
+    setRedistributionInProgress(true);
+    setRedistributionResults(null);
+
+    try {
+      const options: RedistributionOptions = {
+        prioritizeMissedSessions: true,
+        respectDailyLimits: true,
+        allowWeekendOverflow: false,
+        maxRedistributionDays: 14
+      };
+
+      const result = redistributeMissedSessionsEnhanced(
+        studyPlans,
+        settings,
+        fixedCommitments,
+        tasks,
+        options
+      );
+
+      setRedistributionResults({
+        success: result.totalSessionsMoved > 0,
+        message: result.totalSessionsMoved > 0
+          ? `Successfully redistributed ${result.totalSessionsMoved} session${result.totalSessionsMoved > 1 ? 's' : ''}!`
+          : 'No sessions could be redistributed. Check your schedule for available time slots.',
+        details: {
+          redistributed: result.totalSessionsMoved,
+          failed: result.failedSessions.length,
+          conflictsResolved: result.conflictsResolved
+        }
+      });
+
+      if (result.totalSessionsMoved > 0) {
+        setNotificationMessage(`Redistribution complete: ${result.totalSessionsMoved} sessions moved, ${result.failedSessions.length} failed`);
+        // Call the original handler to refresh the UI
+        if (onRedistributeMissedSessions) {
+          onRedistributeMissedSessions();
+        }
+      }
+
+    } catch (error) {
+      console.error('Enhanced redistribution failed:', error);
+      setRedistributionResults({
+        success: false,
+        message: 'Redistribution failed due to an error. Please try again.'
+      });
+    } finally {
+      setRedistributionInProgress(false);
+    }
   };
 
 
