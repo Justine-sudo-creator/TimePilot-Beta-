@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Calendar, CheckSquare, Clock, Settings as SettingsIcon, BarChart3, CalendarDays, Lightbulb, Edit, Trash2, Menu, X, HelpCircle } from 'lucide-react';
 import { Task, StudyPlan, UserSettings, FixedCommitment, StudySession, TimerState } from './types';
-import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback, checkCommitmentConflicts } from './utils/scheduling';
+import { generateNewStudyPlan, getUnscheduledMinutesForTasks, getLocalDateString, redistributeAfterTaskDeletion, redistributeMissedSessionsWithFeedback, checkCommitmentConflicts, redistributeMissedSessionsEnhanced } from './utils/scheduling';
+import { getAccurateUnscheduledTasks, shouldShowNotifications, getNotificationPriority } from './utils/enhanced-notifications';
+import { RedistributionOptions } from './types';
 
 import Dashboard from './components/Dashboard';
 import TaskInput from './components/TaskInput';
@@ -16,6 +18,7 @@ import SuggestionsPanel from './components/SuggestionsPanel';
 import InteractiveTutorial from './components/InteractiveTutorial';
 import TutorialButton from './components/TutorialButton';
 import ErrorBoundary from './components/ErrorBoundary';
+import './utils/test-data-setup'; // Import test data setup for testing
 
 function App() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'plan' | 'timer' | 'calendar' | 'commitments' | 'settings'>('dashboard');
@@ -403,21 +406,54 @@ function App() {
         }
     };
 
-    // Handle redistribution of missed sessions specifically
+    // Enhanced redistribution handler with conflict prevention
+    const handleEnhancedRedistribution = () => {
+        if (tasks.length > 0) {
+            const options: RedistributionOptions = {
+                prioritizeMissedSessions: true,
+                respectDailyLimits: true,
+                allowWeekendOverflow: false,
+                maxRedistributionDays: 14
+            };
+
+            try {
+                const result = redistributeMissedSessionsEnhanced(
+                    studyPlans,
+                    settings,
+                    fixedCommitments,
+                    tasks,
+                    options
+                );
+
+                if (result.totalSessionsMoved > 0) {
+                    setNotificationMessage(
+                        `Enhanced redistribution complete: ${result.totalSessionsMoved} sessions moved, ${result.failedSessions.length} failed, ${result.conflictsResolved} conflicts resolved`
+                    );
+                } else {
+                    setNotificationMessage('No sessions could be redistributed. Check your schedule for available time slots.');
+                }
+            } catch (error) {
+                console.error('Enhanced redistribution failed:', error);
+                setNotificationMessage('Enhanced redistribution failed. Please try again.');
+            }
+        }
+    };
+
+    // Handle redistribution of missed sessions specifically (legacy method)
     const handleRedistributeMissedSessions = () => {
         if (tasks.length > 0) {
             // Use enhanced redistribution with detailed feedback
             const { updatedPlans, feedback } = redistributeMissedSessionsWithFeedback(studyPlans, settings, fixedCommitments, tasks);
-            
+
             if (feedback.success) {
                 setStudyPlans(updatedPlans);
                 setNotificationMessage(feedback.message);
-                
+
                 // Log detailed information for debugging
                 console.log('Redistribution details:', feedback.details);
             } else {
                 setNotificationMessage(feedback.message);
-                
+
                 // Log conflicts and issues for debugging
                 if (feedback.details.conflictsDetected || feedback.details.issues.length > 0 || feedback.details.remainingMissed > 0) {
                     console.warn('Redistribution issues detected:', {
@@ -1528,45 +1564,70 @@ function App() {
         { id: 'settings', label: 'Settings', icon: SettingsIcon }
     ];
 
-    const hasUnscheduled = getUnscheduledMinutesForTasks(tasks, (() => {
-      const taskScheduledHours: Record<string, number> = {};
-      studyPlans.forEach(plan => {
-        plan.plannedTasks.forEach(session => {
-          // Skip sessions that are marked as skipped - they shouldn't count towards scheduled hours
-          if (session.status !== 'skipped') {
-            taskScheduledHours[session.taskId] = (taskScheduledHours[session.taskId] || 0) + session.allocatedHours;
-          }
-        });
-      });
-      return taskScheduledHours;
-    })(), settings).length > 0;
+    // Use enhanced notification system for more accurate unscheduled detection
+    const unscheduledTasks = getAccurateUnscheduledTasks(tasks, studyPlans, settings);
+    const hasUnscheduled = shouldShowNotifications(unscheduledTasks);
+    const notificationPriority = getNotificationPriority(unscheduledTasks);
 
     return (
         <ErrorBoundary>
             <div className={`${darkMode ? 'dark' : ''}`}>
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-                {/* Navbar/Header */}
-                <header className="w-full flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-gray-900 shadow-md z-40">
-                    <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">TimePilot</div>
-                    <div className="flex items-center space-x-2">
+                {/* Animated background with particles */}
+                <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-pink-50 to-cyan-50 dark:from-slate-900 dark:via-purple-900/20 dark:to-slate-900"></div>
+                    <div className="absolute top-0 left-1/4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+                    <div className="absolute top-0 right-1/4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-8 left-1/3 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+                </div>
+
+                <div className="min-h-screen relative">
+                {/* Glassmorphic Header */}
+                <header className="w-full flex items-center justify-between px-4 sm:px-6 py-4 backdrop-blur-md bg-white/10 dark:bg-black/10 border-b border-white/20 dark:border-white/10 z-40 sticky top-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <span className="text-white font-bold text-lg">⚡</span>
+                        </div>
+                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">TimePilot</div>
+                    </div>
+                    <div className="flex items-center space-x-3">
                         <button
-                            className={`flex items-center rounded-full p-2 transition-colors z-50 ${hasUnscheduled ? 'bg-yellow-300 shadow-lg animate-bounce' : 'bg-gray-200'} ${hasUnscheduled ? 'text-yellow-700' : 'text-gray-400'} ${hasUnscheduled ? '' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
-                            title={showSuggestionsPanel ? 'Hide Optimization Suggestions' : 'Show Optimization Suggestions'}
+                            className={`flex items-center rounded-2xl p-3 backdrop-blur-md transition-all duration-300 z-50 ${
+                              hasUnscheduled ?
+                                notificationPriority === 'critical' ? 'bg-red-500/20 border border-red-300/50 shadow-lg shadow-red-500/25 animate-pulse' :
+                                notificationPriority === 'high' ? 'bg-orange-500/20 border border-orange-300/50 shadow-lg shadow-orange-500/25 animate-bounce' :
+                                'bg-yellow-500/20 border border-yellow-300/50 shadow-lg shadow-yellow-500/25'
+                              : 'bg-white/10 border border-white/20'
+                            } ${
+                              hasUnscheduled ?
+                                notificationPriority === 'critical' ? 'text-red-600 dark:text-red-400' :
+                                notificationPriority === 'high' ? 'text-orange-600 dark:text-orange-400' :
+                                'text-yellow-600 dark:text-yellow-400'
+                              : 'text-gray-400'
+                            } ${hasUnscheduled ? 'hover:scale-105' : 'opacity-60 pointer-events-none cursor-not-allowed'}`}
+                            title={showSuggestionsPanel ? 'Hide Study Plan Optimization' :
+                              hasUnscheduled ?
+                                `Show Study Plan Optimization (${unscheduledTasks.length} task${unscheduledTasks.length > 1 ? 's' : ''} need attention)` :
+                                'No optimization suggestions'
+                            }
                             onClick={() => hasUnscheduled && setShowSuggestionsPanel(v => !v)}
                             style={{ outline: 'none', border: 'none' }}
                             disabled={!hasUnscheduled}
                         >
-                            <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6`} fill={hasUnscheduled ? '#fde047' : 'none'} />
+                            <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6`} fill={hasUnscheduled ?
+                              notificationPriority === 'critical' ? '#dc2626' :
+                              notificationPriority === 'high' ? '#ea580c' :
+                              '#fde047'
+                            : 'none'} />
                         </button>
                         <button
-                            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            className="p-3 backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl text-gray-600 dark:text-gray-300 hover:bg-white/20 dark:hover:bg-white/5 transition-all duration-300 hover:scale-105"
                             onClick={() => setShowHelpModal(true)}
                             title="Help & FAQ"
                         >
                             <HelpCircle size={20} />
                         </button>
                         <button
-                            className="lg:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="lg:hidden p-3 backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl text-gray-600 dark:text-gray-300 hover:bg-white/20 dark:hover:bg-white/5 transition-all duration-300 hover:scale-105"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         >
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -1575,10 +1636,10 @@ function App() {
                 </header>
 
                 {/* Navigation */}
-                <nav className="bg-white shadow-sm border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
+                <nav className="backdrop-blur-md bg-white/5 dark:bg-black/5 border-b border-white/10 dark:border-white/5">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* Desktop Navigation */}
-                        <div className="hidden lg:flex space-x-8">
+                        <div className="hidden lg:flex space-x-2">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
@@ -1586,21 +1647,24 @@ function App() {
                                         setActiveTab(tab.id as typeof activeTab);
                                         setMobileMenuOpen(false);
                                     }}
-                                    className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors duration-200 border-b-2 ${
+                                    className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-all duration-300 rounded-t-2xl relative group ${
                                         activeTab === tab.id
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-700 dark:text-violet-300 border-b-2 border-violet-500'
+                                            : 'text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-white/10 dark:hover:bg-white/5'
                                         } ${showInteractiveTutorial && highlightedTab === tab.id ? 'ring-2 ring-yellow-400 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`}
                                 >
-                                    <tab.icon size={20} />
+                                    <tab.icon size={20} className={activeTab === tab.id ? 'text-violet-600 dark:text-violet-400' : ''} />
                                     <span>{tab.label}</span>
+                                    {activeTab === tab.id && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-t-2xl"></div>
+                                    )}
                                 </button>
                             ))}
                         </div>
 
                         {/* Mobile Navigation */}
                         <div className={`lg:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
-                            <div className="py-2 space-y-1">
+                            <div className="py-4 space-y-2">
                                 {tabs.map((tab) => (
                                     <button
                                         key={tab.id}
@@ -1608,13 +1672,13 @@ function App() {
                                             setActiveTab(tab.id as typeof activeTab);
                                             setMobileMenuOpen(false);
                                         }}
-                                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors duration-200 rounded-lg ${
+                                        className={`w-full flex items-center space-x-3 px-6 py-4 text-sm font-medium transition-all duration-300 rounded-2xl backdrop-blur-sm ${
                                             activeTab === tab.id
-                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800'
+                                                ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-700 dark:text-violet-300 border border-violet-200/50 dark:border-violet-500/30'
+                                                : 'text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-white/10 dark:hover:bg-white/5 border border-transparent'
                                         } ${showInteractiveTutorial && highlightedTab === tab.id ? 'ring-2 ring-yellow-400 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`}
                                     >
-                                        <tab.icon size={20} />
+                                        <tab.icon size={20} className={activeTab === tab.id ? 'text-violet-600 dark:text-violet-400' : ''} />
                                         <span>{tab.label}</span>
                                     </button>
                                 ))}
@@ -1624,7 +1688,7 @@ function App() {
                 </nav>
 
                 {/* Main Content */}
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 relative">
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 relative">
                     {/* Toggle Suggestions Panel Button */}
                     {/* Suggestions Panel */}
                     {showSuggestionsPanel && hasUnscheduled && (
@@ -1641,11 +1705,11 @@ function App() {
                         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm sm:max-w-md lg:max-w-2xl px-4">
                             {notificationMessage.includes("can't be added due to schedule conflicts") ? (
                                 // Enhanced notification for task addition conflicts
-                                <div className="bg-white dark:bg-gray-800 border-l-4 border-orange-500 rounded-lg shadow-xl">
-                                    <div className="p-4 sm:p-6">
-                                        <div className="flex items-start space-x-3">
+                                <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 border border-orange-200/50 dark:border-orange-500/30 rounded-2xl shadow-2xl shadow-orange-500/20">
+                                    <div className="p-6 sm:p-8">
+                                        <div className="flex items-start space-x-4">
                                             <div className="flex-shrink-0">
-                                                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25">
                                                     <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                     </svg>
@@ -1762,6 +1826,7 @@ function App() {
                             onAddFixedCommitment={handleAddFixedCommitment}
                             onSkipMissedSession={handleSkipMissedSession}
                 onRedistributeMissedSessions={handleRedistributeMissedSessions}
+                onEnhancedRedistribution={handleEnhancedRedistribution}
                         />
                     )}
 

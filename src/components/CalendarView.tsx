@@ -275,8 +275,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
         // Split if crosses midnight
         splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
+          // Create a more unique ID that includes session number and start time to prevent duplicates
+          const uniqueId = `study-${session.taskId}-${plan.date}-${session.sessionNumber || 0}-${session.startTime.replace(':', '')}-${idx}`;
           calendarEvents.push({
-            id: `study-${session.taskId}-${plan.date}-${idx}`,
+            id: uniqueId,
             title: task.title,
             start,
             end,
@@ -320,8 +322,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             
             // Split if crosses midnight
             splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
+              const uniqueId = `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${(modifiedSession?.startTime || commitment.startTime).replace(':', '')}-${idx}`;
               calendarEvents.push({
-                id: `commitment-${commitment.id}-${currentDate.toISOString().split('T')[0]}-${idx}`,
+                id: uniqueId,
                 title: modifiedSession?.title || commitment.title,
                 start,
                 end,
@@ -362,8 +365,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           
           // Split if crosses midnight
           splitEventIfCrossesMidnight(startDateTime, endDateTime).forEach(({ start, end }, idx) => {
+            const uniqueId = `commitment-${commitment.id}-${dateString}-${(modifiedSession?.startTime || commitment.startTime).replace(':', '')}-${idx}`;
             calendarEvents.push({
-              id: `commitment-${commitment.id}-${dateString}-${idx}`,
+              id: uniqueId,
               title: modifiedSession?.title || commitment.title,
               start,
               end,

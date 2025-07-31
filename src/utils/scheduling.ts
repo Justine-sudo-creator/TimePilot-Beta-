@@ -1,4 +1,5 @@
-import { Task, StudyPlan, StudySession, UserSettings, FixedCommitment, UserReschedule } from '../types';
+import { Task, StudyPlan, StudySession, UserSettings, FixedCommitment, UserReschedule, RedistributionOptions, RedistributionResult } from '../types';
+import { createEnhancedRedistributionEngine, createConflictChecker } from './enhanced-scheduling';
 
 // Utility functions
 export const getLocalDateString = (): string => {
@@ -97,6 +98,48 @@ export const checkSessionStatus = (session: StudySession, planDate: string): 'sc
 const isMissedOrRedistributedSession = (session: StudySession, planDate: string): boolean => {
   const status = checkSessionStatus(session, planDate);
   return status === 'missed' || session.isManualOverride === true || (!!session.originalTime && !!session.originalDate);
+};
+
+// Helper function to optimize session distribution by trying to create larger sessions
+const optimizeSessionDistribution = (task: Task, totalHours: number, daysForTask: string[], settings: UserSettings) => {
+  const minSessionLength = (settings.minSessionLength || 15) / 60; // in hours
+  const maxSessionLength = Math.min(4, settings.dailyAvailableHours); // Cap at 4 hours or daily limit
+
+  // Try to create fewer, larger sessions
+  let optimalSessions: number[] = [];
+  let remainingHours = totalHours;
+
+  // Calculate how many sessions we can create with minimum length
+  const maxSessionsWithMinLength = Math.floor(totalHours / minSessionLength);
+
+  // Determine optimal number of sessions
+  let numSessions = Math.min(daysForTask.length, maxSessionsWithMinLength);
+
+  if (numSessions === 0) {
+    // If we can't meet minimum session length, create one session per day
+    numSessions = daysForTask.length;
+  }
+
+  // Create sessions with preference for larger sessions
+  for (let i = 0; i < numSessions && remainingHours > 0; i++) {
+    const sessionLength = Math.min(
+      remainingHours / (numSessions - i), // Distribute remaining hours evenly
+      maxSessionLength, // Don't exceed max session length
+      remainingHours // Don't exceed remaining hours
+    );
+
+    if (sessionLength >= minSessionLength) {
+      optimalSessions.push(sessionLength);
+      remainingHours -= sessionLength;
+    }
+  }
+
+  // If we have remaining hours, add them to the first session
+  if (remainingHours > 0 && optimalSessions.length > 0) {
+    optimalSessions[0] += remainingHours;
+  }
+
+  return optimalSessions;
 };
 
 // Remove calculatePriorityScore, calculateTaskPriorityScore, and TaskWithPriority
@@ -296,7 +339,7 @@ export const generateNewStudyPlan = (
         let distributedThisRound = 0;
         
         // Calculate optimal distribution for remaining hours
-        const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution);
+        const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution, settings);
         
         // Distribute optimal sessions to available days
         for (let i = 0; i < optimalSessions.length && i < availableDaysForRedistribution.length; i++) {
@@ -390,47 +433,7 @@ export const generateNewStudyPlan = (
       }
     };
 
-    // Helper function to optimize session distribution by trying to create larger sessions
-    const optimizeSessionDistribution = (task: Task, totalHours: number, daysForTask: string[]) => {
-      const minSessionLength = (settings.minSessionLength || 15) / 60; // in hours
-      const maxSessionLength = Math.min(4, settings.dailyAvailableHours); // Cap at 4 hours or daily limit
-      
-      // Try to create fewer, larger sessions
-      let optimalSessions: number[] = [];
-      let remainingHours = totalHours;
-      
-      // Calculate how many sessions we can create with minimum length
-      const maxSessionsWithMinLength = Math.floor(totalHours / minSessionLength);
-      
-      // Determine optimal number of sessions
-      let numSessions = Math.min(daysForTask.length, maxSessionsWithMinLength);
-      
-      if (numSessions === 0) {
-        // If we can't meet minimum session length, create one session per day
-        numSessions = daysForTask.length;
-      }
-      
-      // Create sessions with preference for larger sessions
-      for (let i = 0; i < numSessions && remainingHours > 0; i++) {
-        const sessionLength = Math.min(
-          remainingHours / (numSessions - i), // Distribute remaining hours evenly
-          maxSessionLength, // Don't exceed max session length
-          remainingHours // Don't exceed remaining hours
-        );
-        
-        if (sessionLength >= minSessionLength) {
-          optimalSessions.push(sessionLength);
-          remainingHours -= sessionLength;
-        }
-      }
-      
-      // If we have remaining hours, add them to the first session
-      if (remainingHours > 0 && optimalSessions.length > 0) {
-        optimalSessions[0] += remainingHours;
-      }
-      
-      return optimalSessions;
-    };
+
 
     // For each task, distribute hours evenly across available days until deadline
     for (const task of tasksEven) {
@@ -453,7 +456,7 @@ export const generateNewStudyPlan = (
       let totalHours = task.estimatedHours;
       
       // Use optimized session distribution instead of simple even distribution
-      const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask);
+      const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask, settings);
       
 
       // Assign sessions to available days, distributing optimally
@@ -670,6 +673,202 @@ export const generateNewStudyPlan = (
     // After all days, return plans and suggestions for any unscheduled hours
     return { plans: studyPlans, suggestions };
   }
+
+  if (settings.studyPlanMode === 'balanced') {
+    // BALANCED PRIORITY DISTRIBUTION LOGIC
+    // Combines even distribution stability with priority-based task ordering
+    const tasksBalanced = tasks
+      .filter(task => task.status === 'pending' && task.estimatedHours > 0)
+      .sort((a, b) => {
+        // First sort by importance
+        if (a.importance !== b.importance) return a.importance ? -1 : 1;
+        // Then by deadline urgency for same importance level
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      });
+
+    // Create priority tiers for balanced distribution
+    const importantTasks = tasksBalanced.filter(task => task.importance);
+    const regularTasks = tasksBalanced.filter(task => !task.importance);
+
+    // Further categorize by deadline urgency within each tier
+    const now = new Date();
+    const urgentImportant = importantTasks.filter(task => {
+      const daysUntilDeadline = (new Date(task.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      return daysUntilDeadline <= 3;
+    });
+    const notUrgentImportant = importantTasks.filter(task => {
+      const daysUntilDeadline = (new Date(task.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      return daysUntilDeadline > 3;
+    });
+    const urgentRegular = regularTasks.filter(task => {
+      const daysUntilDeadline = (new Date(task.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      return daysUntilDeadline <= 3;
+    });
+    const notUrgentRegular = regularTasks.filter(task => {
+      const daysUntilDeadline = (new Date(task.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      return daysUntilDeadline > 3;
+    });
+
+    // Reorder tasks by balanced priority: Q1 (urgent+important) -> Q2 (important) -> Q3 (urgent) -> Q4 (neither)
+    const prioritizedTasks = [...urgentImportant, ...notUrgentImportant, ...urgentRegular, ...notUrgentRegular];
+
+    // Use same day calculation logic as even mode
+    const latestDeadline = new Date(Math.max(...prioritizedTasks.map(t => new Date(t.deadline).getTime())));
+    const availableDays: string[] = [];
+    const tempDate = new Date(now);
+    while (tempDate <= latestDeadline) {
+      const dateStr = tempDate.toISOString().split('T')[0];
+      const dayOfWeek = tempDate.getDay();
+      if (settings.workDays.includes(dayOfWeek)) {
+        availableDays.push(dateStr);
+      }
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
+    // Include deadline days
+    if (settings.bufferDays === 0) {
+      prioritizedTasks.forEach(task => {
+        const deadlineDateStr = new Date(task.deadline).toISOString().split('T')[0];
+        if (!availableDays.includes(deadlineDateStr) && settings.workDays.includes(new Date(deadlineDateStr).getDay())) {
+          availableDays.push(deadlineDateStr);
+        }
+      });
+    } else {
+      prioritizedTasks.forEach(task => {
+        const deadline = new Date(task.deadline);
+        deadline.setDate(deadline.getDate() - settings.bufferDays);
+        const deadlineDateStr = deadline.toISOString().split('T')[0];
+        if (!availableDays.includes(deadlineDateStr) && settings.workDays.includes(new Date(deadlineDateStr).getDay())) {
+          availableDays.push(deadlineDateStr);
+        }
+      });
+    }
+    availableDays.sort();
+
+    const studyPlans: StudyPlan[] = [];
+    const dailyRemainingHours: { [date: string]: number } = {};
+    availableDays.forEach(date => {
+      dailyRemainingHours[date] = settings.dailyAvailableHours;
+      studyPlans.push({
+        id: `plan-${date}`,
+        date,
+        plannedTasks: [],
+        totalStudyHours: 0,
+        availableHours: settings.dailyAvailableHours
+      });
+    });
+
+    // Balanced distribution: Apply even distribution within priority tiers
+    const distributeTierTasks = (tierTasks: Task[], tierName: string) => {
+      const tierTaskScheduledHours: { [taskId: string]: number } = {};
+      tierTasks.forEach(task => {
+        tierTaskScheduledHours[task.id] = 0;
+      });
+
+      // Calculate total hours needed for this tier
+      const totalTierHours = tierTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
+
+      if (totalTierHours === 0) return;
+
+      // Distribute tier tasks evenly across available days until their deadlines
+      for (const task of tierTasks) {
+        const deadline = new Date(task.deadline);
+        if (settings.bufferDays > 0) {
+          deadline.setDate(deadline.getDate() - settings.bufferDays);
+        }
+        const deadlineDateStr = deadline.toISOString().split('T')[0];
+        const daysForTask = availableDays.filter(d => d <= deadlineDateStr);
+
+        if (daysForTask.length === 0) continue;
+
+        // Use optimized session distribution for even spreading
+        const sessionLengths = optimizeSessionDistribution(task, task.estimatedHours, daysForTask, settings);
+
+        for (let i = 0; i < sessionLengths.length && i < daysForTask.length; i++) {
+          const date = daysForTask[i];
+          const dayPlan = studyPlans.find(p => p.date === date)!;
+          const availableHours = dailyRemainingHours[date];
+          const thisSessionLength = Math.min(sessionLengths[i], availableHours);
+
+          if (thisSessionLength > 0) {
+            const roundedSessionLength = Math.round(thisSessionLength * 60) / 60;
+            dayPlan.plannedTasks.push({
+              taskId: task.id,
+              scheduledTime: `${date}`,
+              startTime: '',
+              endTime: '',
+              allocatedHours: roundedSessionLength,
+              sessionNumber: (dayPlan.plannedTasks.filter(s => s.taskId === task.id).length) + 1,
+              isFlexible: true,
+              status: 'scheduled'
+            });
+            dayPlan.totalStudyHours = Math.round((dayPlan.totalStudyHours + roundedSessionLength) * 60) / 60;
+            dailyRemainingHours[date] = Math.round((dailyRemainingHours[date] - roundedSessionLength) * 60) / 60;
+            tierTaskScheduledHours[task.id] = Math.round((tierTaskScheduledHours[task.id] + roundedSessionLength) * 60) / 60;
+          }
+        }
+      }
+    };
+
+    // Distribute tasks by priority tier
+    distributeTierTasks(urgentImportant, 'Urgent & Important');
+    distributeTierTasks(notUrgentImportant, 'Important');
+    distributeTierTasks(urgentRegular, 'Urgent');
+    distributeTierTasks(notUrgentRegular, 'Regular');
+
+    // Sort sessions within each day by priority (important first, then by deadline)
+    for (const plan of studyPlans) {
+      plan.plannedTasks.sort((a, b) => {
+        const taskA = prioritizedTasks.find(t => t.id === a.taskId);
+        const taskB = prioritizedTasks.find(t => t.id === b.taskId);
+        if (!taskA || !taskB) return 0;
+        if (taskA.importance !== taskB.importance) return taskA.importance ? -1 : 1;
+        return new Date(taskA.deadline).getTime() - new Date(taskB.deadline).getTime();
+      });
+
+      // Assign time slots with same logic as other modes
+      const commitmentsForDay = fixedCommitments.filter(commitment => {
+        if (commitment.recurring) {
+          return commitment.daysOfWeek.includes(new Date(plan.date).getDay());
+        } else {
+          return commitment.specificDates?.includes(plan.date) || false;
+        }
+      });
+
+      let assignedSessions: StudySession[] = [];
+      for (const session of plan.plannedTasks) {
+        const slot = findNextAvailableTimeSlot(
+          session.allocatedHours,
+          assignedSessions,
+          commitmentsForDay,
+          settings.studyWindowStartHour || 6,
+          settings.studyWindowEndHour || 23,
+          settings.bufferTimeBetweenSessions || 0,
+          plan.date
+        );
+        if (slot) {
+          session.startTime = slot.start;
+          session.endTime = slot.end;
+          assignedSessions.push(session);
+        } else {
+          session.startTime = '';
+          session.endTime = '';
+        }
+      }
+    }
+
+    // Create suggestions for any unscheduled hours
+    const suggestions = getUnscheduledMinutesForTasks(prioritizedTasks,
+      prioritizedTasks.reduce((acc, task) => {
+        acc[task.id] = studyPlans.reduce((sum, plan) =>
+          sum + plan.plannedTasks.filter(s => s.taskId === task.id && s.status !== 'skipped')
+            .reduce((sessionSum, session) => sessionSum + session.allocatedHours, 0), 0);
+        return acc;
+      }, {} as { [taskId: string]: number }), settings);
+
+    return { plans: studyPlans, suggestions };
+  }
+
   // Step 1: Filter and sort tasks by Eisenhower Matrix logic
   const tasksSorted = tasks
     .filter(task => task.status === 'pending' && task.estimatedHours > 0)
@@ -1077,6 +1276,60 @@ export const findNextAvailableStartTime = (
   
   // If not, return the study window start time
   return studyWindowStart;
+};
+
+/**
+ * Enhanced redistribution function using the new conflict-free system
+ */
+export const redistributeMissedSessionsEnhanced = (
+  studyPlans: StudyPlan[],
+  settings: UserSettings,
+  fixedCommitments: FixedCommitment[],
+  tasks: Task[],
+  options: RedistributionOptions = {
+    prioritizeMissedSessions: true,
+    respectDailyLimits: true,
+    allowWeekendOverflow: false,
+    maxRedistributionDays: 14
+  }
+): RedistributionResult => {
+  const engine = createEnhancedRedistributionEngine(settings, fixedCommitments);
+  return engine.redistributeMissedSessions(studyPlans, tasks, options);
+};
+
+/**
+ * Enhanced skip session function with partial skip support
+ */
+export const skipSessionEnhanced = (
+  studyPlans: StudyPlan[],
+  planDate: string,
+  sessionNumber: number,
+  taskId: string,
+  options: {
+    partialHours?: number;
+    reason?: 'user_choice' | 'conflict' | 'overload';
+  } = {}
+): boolean => {
+  const engine = createEnhancedRedistributionEngine(
+    { dailyAvailableHours: 8, workDays: [1,2,3,4,5], bufferDays: 0, minSessionLength: 15, bufferTimeBetweenSessions: 0, shortBreakDuration: 5, longBreakDuration: 15, maxConsecutiveHours: 4, studyWindowStartHour: 6, studyWindowEndHour: 23, avoidTimeRanges: [], weekendStudyHours: 6, autoCompleteSessions: false, enableNotifications: true },
+    []
+  );
+  return engine.skipSession(studyPlans, planDate, sessionNumber, taskId, options);
+};
+
+/**
+ * Validate time slot for conflicts
+ */
+export const validateTimeSlot = (
+  date: string,
+  startTime: string,
+  endTime: string,
+  existingSessions: StudySession[],
+  settings: UserSettings,
+  fixedCommitments: FixedCommitment[]
+) => {
+  const checker = createConflictChecker(settings, fixedCommitments);
+  return checker.validateTimeSlot(date, startTime, endTime, existingSessions);
 };
 
 export const moveMissedSessions = (
@@ -1764,7 +2017,7 @@ export const redistributeAfterTaskDeletion = (
       }
       
       let distributedThisRound = 0;
-      const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution);
+      const optimalSessions = optimizeSessionDistribution(task, remainingUnscheduledHours, availableDaysForRedistribution, settings);
       
       for (let i = 0; i < optimalSessions.length && i < availableDaysForRedistribution.length; i++) {
         const date = availableDaysForRedistribution[i];
@@ -1855,47 +2108,7 @@ export const redistributeAfterTaskDeletion = (
     }
   };
 
-  // Helper function to optimize session distribution (same as in generateNewStudyPlan)
-  const optimizeSessionDistribution = (task: Task, totalHours: number, daysForTask: string[]) => {
-    const minSessionLength = (settings.minSessionLength || 15) / 60; // in hours
-    const maxSessionLength = Math.min(4, settings.dailyAvailableHours); // Cap at 4 hours or daily limit
-    
-    // Try to create fewer, larger sessions
-    let optimalSessions: number[] = [];
-    let remainingHours = totalHours;
-    
-    // Calculate how many sessions we can create with minimum length
-    const maxSessionsWithMinLength = Math.floor(totalHours / minSessionLength);
-    
-    // Determine optimal number of sessions
-    let numSessions = Math.min(daysForTask.length, maxSessionsWithMinLength);
-    
-    if (numSessions === 0) {
-      // If we can't meet minimum session length, create one session per day
-      numSessions = daysForTask.length;
-    }
-    
-    // Create sessions with preference for larger sessions
-    for (let i = 0; i < numSessions && remainingHours > 0; i++) {
-      const sessionLength = Math.min(
-        remainingHours / (numSessions - i), // Distribute remaining hours evenly
-        maxSessionLength, // Don't exceed max session length
-        remainingHours // Don't exceed remaining hours
-      );
-      
-      if (sessionLength >= minSessionLength) {
-        optimalSessions.push(sessionLength);
-        remainingHours -= sessionLength;
-      }
-    }
-    
-    // If we have remaining hours, add them to the first session
-    if (remainingHours > 0 && optimalSessions.length > 0) {
-      optimalSessions[0] += remainingHours;
-    }
-    
-    return optimalSessions;
-  };
+
 
   // AGGRESSIVE REDISTRIBUTION: Distribute all tasks optimally
   for (const task of tasksEven) {
@@ -1911,7 +2124,7 @@ export const redistributeAfterTaskDeletion = (
     }
     
     let totalHours = task.estimatedHours;
-    const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask);
+    const sessionLengths = optimizeSessionDistribution(task, totalHours, daysForTask, settings);
     
     let unscheduledHours = 0;
     for (let i = 0; i < sessionLengths.length && i < daysForTask.length; i++) {
@@ -2547,5 +2760,3 @@ export const testRedistributionImplementation = (
   
   return { testResults, issues };
 };
-
-

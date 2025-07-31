@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, BookOpen, TrendingUp, AlertTriangle, CheckCircle, Lightbulb, X, CheckCircle2, Clock3 } from 'lucide-react';
 import { StudyPlan, Task, StudySession, FixedCommitment, UserSettings } from '../types'; // Added FixedCommitment to imports
-import { formatTime, generateSmartSuggestions, getLocalDateString, checkSessionStatus, getDailyAvailableTimeSlots, findNextAvailableStartTime, moveIndividualSession } from '../utils/scheduling';
+import { formatTime, generateSmartSuggestions, getLocalDateString, checkSessionStatus, getDailyAvailableTimeSlots, findNextAvailableStartTime, moveIndividualSession, redistributeMissedSessionsEnhanced, skipSessionEnhanced, validateTimeSlot } from '../utils/scheduling';
+import { RedistributionOptions } from '../types';
 
 interface StudyPlanViewProps {
   studyPlans: StudyPlan[];
@@ -14,6 +15,7 @@ interface StudyPlanViewProps {
   onAddFixedCommitment?: (commitment: FixedCommitment) => void; // NEW PROP
   onSkipMissedSession: (planDate: string, sessionNumber: number, taskId: string) => void;
   onRedistributeMissedSessions?: () => void; // NEW PROP for redistribution
+  onEnhancedRedistribution?: () => void; // Enhanced redistribution prop
 }
 
 // Force warnings UI to be hidden for all users on first load unless they have a preference
@@ -23,7 +25,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedCommitments, onSelectTask, onGenerateStudyPlan, onUndoSessionDone, settings, onAddFixedCommitment, onSkipMissedSession, onRedistributeMissedSessions }) => {
+const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedCommitments, onSelectTask, onGenerateStudyPlan, onUndoSessionDone, settings, onAddFixedCommitment, onSkipMissedSession, onRedistributeMissedSessions, onEnhancedRedistribution }) => {
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [] = useState<{ taskTitle: string; unscheduledMinutes: number } | null>(null);
   const [showRegenerateConfirmation, setShowRegenerateConfirmation] = useState(false);
@@ -37,6 +39,13 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
   const [, setShowPlanStaleNotif] = useState(true);
   // Smart assistant state
   const [showSmartAssistant, setShowSmartAssistant] = useState(false);
+  // Enhanced redistribution state
+  const [redistributionInProgress, setRedistributionInProgress] = useState(false);
+  const [redistributionResults, setRedistributionResults] = useState<{
+    success: boolean;
+    message: string;
+    details?: { redistributed: number; failed: number; conflictsResolved: number };
+  } | null>(null);
   // Persist showWarnings in localStorage
   const [showWarnings, setShowWarningsRaw] = useState(() => {
     const saved = localStorage.getItem('timepilot-showWarnings');
@@ -225,10 +234,89 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
     console.log('Missed session:', ms.task.title, 'on', ms.planDate, 'status:', checkSessionStatus(ms.session, ms.planDate));
   });
 
-  // Handler to skip a missed session
-  const handleSkipMissedSession = (planDate: string, sessionNumber: number, taskId: string) => {
-    onSkipMissedSession(planDate, sessionNumber, taskId);
-    setNotificationMessage('Session skipped! It will not be redistributed in future plans.');
+  // Enhanced handler to skip a missed session with partial skip support
+  const handleSkipMissedSession = (planDate: string, sessionNumber: number, taskId: string, partialHours?: number) => {
+    if (partialHours) {
+      // Use enhanced skip functionality for partial skipping
+      const success = skipSessionEnhanced(studyPlans, planDate, sessionNumber, taskId, {
+        partialHours,
+        reason: 'user_choice'
+      });
+
+      if (success) {
+        setNotificationMessage(`Partially skipped ${formatTime(partialHours)} of session. Remaining time will be rescheduled.`);
+        // Force a re-render by calling the parent's redistribution handler
+        if (onRedistributeMissedSessions) {
+          onRedistributeMissedSessions();
+        }
+      } else {
+        setNotificationMessage('Failed to partially skip session.');
+      }
+    } else {
+      // Full skip using original method
+      onSkipMissedSession(planDate, sessionNumber, taskId);
+      setNotificationMessage('Session skipped! It will not be redistributed in future plans.');
+    }
+  };
+
+  // Enhanced redistribution handler
+  const handleEnhancedRedistribution = async () => {
+    if (redistributionInProgress) return;
+
+    setRedistributionInProgress(true);
+    setRedistributionResults(null);
+
+    try {
+      // Use parent handler if available (preferred), otherwise use local implementation
+      if (onEnhancedRedistribution) {
+        onEnhancedRedistribution();
+        setRedistributionResults({
+          success: true,
+          message: 'Enhanced redistribution completed!'
+        });
+      } else {
+        // Fallback to local implementation
+        const options: RedistributionOptions = {
+          prioritizeMissedSessions: true,
+          respectDailyLimits: true,
+          allowWeekendOverflow: false,
+          maxRedistributionDays: 14
+        };
+
+        const result = redistributeMissedSessionsEnhanced(
+          studyPlans,
+          settings,
+          fixedCommitments,
+          tasks,
+          options
+        );
+
+        setRedistributionResults({
+          success: result.totalSessionsMoved > 0,
+          message: result.totalSessionsMoved > 0
+            ? `Successfully redistributed ${result.totalSessionsMoved} session${result.totalSessionsMoved > 1 ? 's' : ''}!`
+            : 'No sessions could be redistributed. Check your schedule for available time slots.',
+          details: {
+            redistributed: result.totalSessionsMoved,
+            failed: result.failedSessions.length,
+            conflictsResolved: result.conflictsResolved
+          }
+        });
+
+        if (result.totalSessionsMoved > 0) {
+          setNotificationMessage(`Redistribution complete: ${result.totalSessionsMoved} sessions moved, ${result.failedSessions.length} failed`);
+        }
+      }
+
+    } catch (error) {
+      console.error('Enhanced redistribution failed:', error);
+      setRedistributionResults({
+        success: false,
+        message: 'Redistribution failed due to an error. Please try again.'
+      });
+    } finally {
+      setRedistributionInProgress(false);
+    }
   };
 
 
@@ -257,11 +345,26 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={onRedistributeMissedSessions || onGenerateStudyPlan}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors"
-                title="Redistribute missed sessions to available time slots"
+                onClick={handleEnhancedRedistribution}
+                disabled={redistributionInProgress}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Intelligently redistribute missed sessions with conflict prevention"
               >
-                Redistribute Missed Sessions
+                {redistributionInProgress ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Redistributing...</span>
+                  </div>
+                ) : (
+                  'Smart Redistribution'
+                )}
+              </button>
+              <button
+                onClick={onRedistributeMissedSessions || onGenerateStudyPlan}
+                className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                title="Use legacy redistribution method"
+              >
+                Legacy Mode
               </button>
             </div>
           </div>
@@ -272,7 +375,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
                 <p>You have missed {missedSessions.length} study session{missedSessions.length > 1 ? 's' : ''}. You can:</p>
                 <ul className="mt-2 space-y-1">
                   <li>• <strong>Skip</strong> missed sessions (they won't be redistributed)</li>
-                  <li>• <strong>Redistribute missed sessions</strong> to automatically reschedule them in your new study plan</li>
+                  <li>• <strong>Smart Redistribution</strong> uses conflict-free scheduling with priority-based placement</li>
                   <li>• <strong>Start studying</strong> any missed session now</li>
                 </ul>
               </>
@@ -281,10 +384,44 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             )}
           </div>
 
+          {/* Redistribution Results */}
+          {redistributionResults && (
+            <div className={`mb-4 p-4 rounded-lg border-l-4 ${
+              redistributionResults.success
+                ? 'bg-green-50 border-green-500 dark:bg-green-900/20 dark:border-green-400'
+                : 'bg-red-50 border-red-500 dark:bg-red-900/20 dark:border-red-400'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`font-medium ${
+                    redistributionResults.success
+                      ? 'text-green-800 dark:text-green-200'
+                      : 'text-red-800 dark:text-red-200'
+                  }`}>
+                    {redistributionResults.message}
+                  </p>
+                  {redistributionResults.details && (
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                      <p>• Sessions redistributed: {redistributionResults.details.redistributed}</p>
+                      <p>• Failed redistributions: {redistributionResults.details.failed}</p>
+                      <p>• Conflicts resolved: {redistributionResults.details.conflictsResolved}</p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setRedistributionResults(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
                         {missedSessions.length > 0 ? (
               missedSessions.map(({planDate, session, task}, idx) => (
-                <div key={planDate + '-' + session.sessionNumber + '-' + task.id} 
+                <div key={`missed-${planDate}-${session.sessionNumber || 0}-${task.id}-${session.startTime || ''}-${idx}`} 
                      className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
@@ -322,8 +459,17 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
                     onClick={() => handleSkipMissedSession(planDate, session.sessionNumber || 0, task.id)}
                     className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors duration-200 dark:bg-yellow-900 dark:text-yellow-200 dark:hover:bg-yellow-800"
                   >
-                    Skip
+                    Skip All
                   </button>
+                  {session.allocatedHours > 0.5 && (
+                    <button
+                      onClick={() => handleSkipMissedSession(planDate, session.sessionNumber || 0, task.id, session.allocatedHours / 2)}
+                      className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors duration-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800"
+                      title={`Skip ${formatTime(session.allocatedHours / 2)} and reschedule the rest`}
+                    >
+                      Skip Half
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -427,6 +573,32 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
           </div>
         </div>
       )}
+      {/* Test Data Setup (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">🧪 Testing Mode</h3>
+              <p className="text-xs text-yellow-600 dark:text-yellow-300 mt-1">
+                Click to create test data with missed sessions to test the enhanced redistribution system
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                if ((window as any).setupTestData) {
+                  (window as any).setupTestData();
+                } else {
+                  setNotificationMessage('Test data setup not available');
+                }
+              }}
+              className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors dark:bg-yellow-900 dark:text-yellow-200 dark:hover:bg-yellow-800"
+            >
+              Setup Test Data
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Generate Study Plan Button (only if no study plan exists and there are active tasks) */}
       {studyPlans.length === 0 && activeTasks.length > 0 && (
       <div className="flex justify-end space-x-3">
@@ -515,7 +687,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             <div className="text-6xl mb-4">🎉</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2 dark:text-white">No Work Today!</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              It's your day off! Time to relax, recharge, and maybe catch up on some Netflix. 📺
+              It's your day off! Time to relax, recharge, and maybe catch up on some Netflix. ����
             </p>
             <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg p-4">
               <p className="text-sm text-gray-700 dark:text-gray-200">
@@ -692,7 +864,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
             
                           return (
                 <div
-                  key={index}
+                  key={`today-${session.taskId}-${session.sessionNumber || 0}-${session.startTime || ''}-${todaysPlan.date}`}
                   className={`p-4 border-l-4 rounded-lg study-session-item ${!isDone && !isCompleted && sessionStatus !== 'missed' ? 'cursor-pointer hover:shadow-md' : 'cursor-default'} transition-all duration-200 flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring}`}
                   onClick={() => !isDone && !isCompleted && sessionStatus !== 'missed' && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
                 >
@@ -852,7 +1024,7 @@ const StudyPlanView: React.FC<StudyPlanViewProps> = ({ studyPlans, tasks, fixedC
 
                       return (
                         <div
-                          key={index}
+                          key={`upcoming-${session.taskId}-${session.sessionNumber || 0}-${session.startTime || ''}-${plan.date}`}
                           className={`flex items-center justify-between p-2 rounded ${
                             isRescheduled 
                               ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' 

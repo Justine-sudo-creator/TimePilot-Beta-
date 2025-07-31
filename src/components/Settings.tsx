@@ -280,22 +280,24 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 dark:bg-gray-900 dark:shadow-gray-900">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2 dark:text-white">
-        <SettingsIcon className="text-blue-600 dark:text-blue-400" size={20} />
+    <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 rounded-3xl shadow-2xl shadow-purple-500/10 p-6 border border-white/20 dark:border-white/10">
+      <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center space-x-3">
+        <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+          <SettingsIcon className="text-white" size={18} />
+        </div>
         <span>Your Study Preferences</span>
       </h2>
 
       {/* Validation Messages */}
       {validationMessages.length > 0 && (
-        <div className="mb-4 space-y-2">
+        <div className="mb-6 space-y-3">
           {validationMessages.map((msg, index) => (
             <div
               key={index}
-              className={`flex items-start space-x-2 p-3 rounded-md ${
-                msg.type === 'error' 
-                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
-                  : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+              className={`flex items-start space-x-3 p-4 rounded-2xl backdrop-blur-sm border ${
+                msg.type === 'error'
+                  ? 'bg-red-500/10 border-red-300/50 dark:border-red-500/30'
+                  : 'bg-yellow-500/10 border-yellow-300/50 dark:border-yellow-500/30'
               }`}
             >
               <AlertTriangle 
@@ -318,18 +320,20 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-4">
+      <form onSubmit={handleSave} className="space-y-6">
         {/* Two Column Layout for Main Settings */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column */}
-          <div className="space-y-4">
+          <div className="space-y-6">
         {/* Daily Available Hours */}
-        <div>
-              <label htmlFor="dailyHours" className="flex text-sm font-medium text-gray-700 mb-1 items-center space-x-2 dark:text-gray-200">
-                <Clock size={16} className="text-gray-500 dark:text-gray-400" />
+        <div className="backdrop-blur-sm bg-white/50 dark:bg-white/5 rounded-2xl p-5 border border-white/20 dark:border-white/10 transition-all duration-300 hover:bg-white/60 dark:hover:bg-white/10">
+              <label htmlFor="dailyHours" className="flex text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 items-center space-x-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                  <Clock size={14} className="text-white" />
+                </div>
             <span>How many hours can you study per day?</span>
           </label>
-              <p className="text-xs text-gray-500 mb-1 dark:text-gray-400">This includes all your study time for the day.</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">This includes all your study time for the day.</p>
           <input
             type="number"
             id="dailyHours"
@@ -338,7 +342,7 @@ const Settings: React.FC<SettingsProps> = ({
             min="1"
             max="24"
             disabled={isSettingDisabled('dailyAvailableHours')}
-            className={`block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white ${getDisabledStyling('dailyAvailableHours')}`}
+            className={`block w-full backdrop-blur-sm bg-white/70 dark:bg-black/20 border border-white/30 dark:border-white/20 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm dark:text-white transition-all duration-300 ${getDisabledStyling('dailyAvailableHours')}`}
             required
           />
         </div>
@@ -522,6 +526,23 @@ const Settings: React.FC<SettingsProps> = ({
               />
                   <span className="text-sm text-gray-700 dark:text-gray-200">Evenly Distributed <span className="text-xs text-gray-500 dark:text-gray-400">(spread all tasks equally)</span></span>
             </label>
+            <label className={`flex items-center gap-2 ${isSettingDisabled('studyPlanMode') ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <input
+                type="radio"
+                name="studyPlanMode"
+                value="balanced"
+                checked={studyPlanMode === 'balanced'}
+                onChange={() => setStudyPlanMode('balanced')}
+                disabled={isSettingDisabled('studyPlanMode')}
+                className="form-radio text-blue-600"
+              />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Balanced Priority <span className="text-xs text-gray-500 dark:text-gray-400">(priority-based even distribution)</span></span>
+            </label>
+              </div>
+              <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                <div><strong>Eisenhower:</strong> Tasks scheduled by importance & urgency first</div>
+                <div><strong>Even Distribution:</strong> All tasks spread equally across available time</div>
+                <div><strong>Balanced Priority:</strong> Important tasks get priority but are evenly distributed within their tier</div>
               </div>
             </div>
           </div>
@@ -585,18 +606,18 @@ const Settings: React.FC<SettingsProps> = ({
 
 
         {/* Save Button */}
-          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-6 border-t border-white/20 dark:border-white/10">
           <button
             type="submit"
               disabled={validationMessages.some(msg => msg.type === 'error')}
-              className={`w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              className={`w-full inline-flex justify-center py-4 px-6 border-none shadow-lg text-sm font-semibold rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-all duration-300 ${
                 validationMessages.some(msg => msg.type === 'error')
                   ? 'bg-gray-400 cursor-not-allowed dark:bg-gray-600'
-                  : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
+                  : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-105'
               }`}
           >
             {validationMessages.some(msg => msg.type === 'error') && (validateMissedSessions().isValid === false || validateRescheduledSessions().isValid === false)
-              ? 'Handle Sessions First' 
+              ? 'Handle Sessions First'
               : 'Save Settings'
             }
           </button>

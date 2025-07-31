@@ -286,8 +286,15 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask, onCancel }) => {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 dark:bg-gray-900 dark:shadow-gray-900 max-w-2xl mx-auto task-input-section">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Add New Task</h2>
+    <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 rounded-3xl shadow-2xl shadow-purple-500/10 p-8 border border-white/20 dark:border-white/10 max-w-2xl mx-auto task-input-section relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-full blur-xl"></div>
+      <div className="relative">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <Plus className="text-white" size={18} />
+          </div>
+          <span>Add New Task</span>
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
         {/* Task Title & Deadline Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -298,7 +305,7 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask, onCancel }) => {
                 required
                 value={formData.title}
               onChange={e => setFormData(f => ({ ...f, title: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300 bg-white dark:bg-gray-800 dark:text-white`}
+              className={`w-full px-4 py-3 backdrop-blur-sm bg-white/70 dark:bg-black/20 border border-white/30 dark:border-white/20 rounded-xl text-base focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:text-white transition-all duration-300`}
               placeholder="e.g., Write project report"
             />
           </div>
@@ -664,6 +671,7 @@ const TaskInput: React.FC<TaskInputProps> = ({ onAddTask, onCancel }) => {
             </button>
           </div>
         </form>
+      </div>
     </div>
   );
 };

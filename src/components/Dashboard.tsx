@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3, XCircle } from 'lucide-react';
+import { Clock, BookOpen, TrendingUp, Calendar, Bell, CheckCircle2, AlertTriangle, Clock3 } from 'lucide-react';
 import { Task, StudyPlan } from '../types';
 import { formatTime, getLocalDateString, checkSessionStatus } from '../utils/scheduling';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -80,24 +80,21 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
   const isTodayWorkDay = workDays.includes(todayDayOfWeek);
 
   // --- Session Analytics ---
-  let doneCount = 0, missedCount = 0, skippedCount = 0, totalSessions = 0;
+  let doneCount = 0, skippedCount = 0, totalSessions = 0;
   filteredPlans.forEach(plan => {
     plan.plannedTasks.forEach(session => {
       totalSessions++;
-      // Use checkSessionStatus for proper detection of missed sessions
-      const sessionStatus = checkSessionStatus(session, plan.date);
-      if (session.status === 'completed' || session.done || sessionStatus === 'completed') {
+      // Only count completed and skipped sessions for positive metrics
+      if (session.status === 'completed' || session.done) {
         doneCount++;
       } else if (session.status === 'skipped') {
         skippedCount++;
-      } else if (sessionStatus === 'missed') {
-        missedCount++;
       }
     });
   });
 
-  // Show regenerate prompt if there are missed sessions
-  const hasMissedSessions = missedCount > 0;
+  // Focus on positive metrics instead of missed sessions
+  const hasCompletedSessions = doneCount > 0;
 
   // Check for manually rescheduled sessions
   const hasManualReschedules = studyPlans.some(plan => 
@@ -138,11 +135,11 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
       {!hasCompletedTutorial && (
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-4 sm:p-6 shadow-lg">
-          <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome to TimePilot! 🚀</h1>
+        <div className="backdrop-blur-md bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white rounded-3xl p-6 sm:p-8 shadow-2xl shadow-violet-500/25 border border-white/20 relative overflow-hidden">
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">Welcome to TimePilot! ����</h1>
           <p className="text-blue-100 mb-4">
             Your intelligent study planning companion. Let's get you started with your first task!
           </p>
@@ -171,27 +168,19 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
         </div>
       )}
 
-      {/* Regenerate Plan Prompt */}
-      {hasMissedSessions && showRegeneratePrompt && !hasManualReschedules && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg flex items-center justify-between dark:bg-yellow-900/20 dark:border-yellow-700">
+      {/* Positive reinforcement for completed sessions */}
+      {hasCompletedSessions && doneCount >= 3 && showRegeneratePrompt && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg flex items-center justify-between dark:bg-green-900/20 dark:border-green-700">
           <div>
-            <span className="font-semibold text-yellow-800 dark:text-yellow-200">Missed sessions detected.</span>
-            <span className="ml-2 text-yellow-700 dark:text-yellow-100">Regenerate your study plan to get back on track!</span>
+            <span className="font-semibold text-green-800 dark:text-green-200">Great progress!</span>
+            <span className="ml-2 text-green-700 dark:text-green-100">You've completed {doneCount} study session{doneCount > 1 ? 's' : ''}. Keep up the momentum! 🎉</span>
           </div>
-          <div className="flex items-center space-x-2">
           <button
-              onClick={() => setShowRegeneratePrompt(false)}
-              className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200"
-            >
-              <XCircle size={20} />
-          </button>
-          <button
-              onClick={() => onGenerateStudyPlan?.()}
-              className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors dark:bg-yellow-800 dark:text-yellow-200 dark:hover:bg-yellow-700"
+            onClick={() => setShowRegeneratePrompt(false)}
+            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
           >
-              Regenerate
+            <X size={20} />
           </button>
-          </div>
         </div>
       )}
 
@@ -404,8 +393,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
               <div className="space-y-3">
                 {todaysPlan.plannedTasks
                   .filter(session => {
-                    const sessionStatus = checkSessionStatus(session, todaysPlan.date);
-                    return sessionStatus !== 'missed' && session.status !== 'skipped' && !session.done && session.status !== 'completed';
+                    // Show all active sessions (not completed or skipped)
+                    return session.status !== 'skipped' && !session.done && session.status !== 'completed';
                   })
                   .map((session, index) => {
                   const task = tasks.find(t => t.id === session.taskId);
@@ -413,9 +402,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                   const isDone = session.done;
                   const isCompleted = session.status === 'completed';
                   
-                  // Check session status to detect missed sessions
+                  // Check session status for display purposes only
                   const sessionStatusResult = checkSessionStatus(session, todaysPlan.date);
-                  const isMissed = sessionStatusResult === 'missed';
                   const isOverdue = sessionStatusResult === 'overdue';
                   const isRescheduled = session.isManualOverride;
                   
@@ -486,10 +474,6 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                     currentSessionStatus = 'completed';
                     statusIcon = <CheckCircle2 className={`${statusColors.completed.icon} mr-2`} size={22} />;
                     statusText = 'Completed';
-                  } else if (isMissed) {
-                    currentSessionStatus = 'missed';
-                    statusIcon = <XCircle className={`${statusColors.missed.icon} mr-2`} size={22} />;
-                    statusText = 'Missed';
                   } else if (isOverdue) {
                     currentSessionStatus = 'overdue';
                     statusIcon = <AlertTriangle className={`${statusColors.overdue.icon} mr-2`} size={22} />;
@@ -509,10 +493,10 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                   return (
                     <div 
                       key={index} 
-                      className={`p-4 border-l-4 rounded-lg flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring} ${!isDone && !isCompleted && !isMissed ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
-                      onClick={() => !isDone && !isCompleted && !isMissed && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
+                      className={`p-4 border-l-4 rounded-lg flex items-center justify-between ${currentStatusColors.bg} ${importanceStyle.ring} ${!isDone && !isCompleted ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}`}
+                      onClick={() => !isDone && !isCompleted && todaysPlan && onSelectTask(task, { allocatedHours: session.allocatedHours, planDate: todaysPlan.date, sessionNumber: session.sessionNumber })}
                     >
-                      <div className={`flex-1 flex items-center ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
+                      <div className={`flex-1 flex items-center ${isDone || isCompleted ? 'pointer-events-none' : ''}`}>
                         {statusIcon}
                         <div>
                           <div className="flex items-center space-x-2 mb-2">
@@ -542,14 +526,14 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
                           </div>
                         </div>
                       </div>
-                      <div className={`text-sm text-gray-500 mb-1 ml-4 dark:text-gray-400 ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
+                      <div className={`text-sm text-gray-500 mb-1 ml-4 dark:text-gray-400 ${isDone || isCompleted ? 'pointer-events-none' : ''}`}>
                         Due: {new Date(task.deadline).toLocaleDateString()}
                       </div>
                       {task.importance && (
                         <span className={`px-2 py-1 text-xs rounded-full ${importanceStyle.badge} ml-4`}>Important</span>
                       )}
                       {/* Task session progress bar */}
-                      <div className={`w-32 ml-4 ${isDone || isCompleted || isMissed ? 'pointer-events-none' : ''}`}>
+                      <div className={`w-32 ml-4 ${isDone || isCompleted ? 'pointer-events-none' : ''}`}>
                         <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                           <div
                             className={`h-2 rounded-full transition-all duration-300 ${currentStatusColors.progress}`}
@@ -767,8 +751,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tasks, studyPlans, dailyAvailable
               <div className="text-xs text-gray-600 dark:text-gray-300">Done{totalSessions > 0 ? ` (${((doneCount/totalSessions)*100).toFixed(0)}%)` : ''}</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-red-600 dark:text-red-400">{missedCount}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-300">Missed{totalSessions > 0 ? ` (${((missedCount/totalSessions)*100).toFixed(0)}%)` : ''}</div>
+              <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{totalSessions - doneCount - skippedCount}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">Remaining{totalSessions > 0 ? ` (${(((totalSessions - doneCount - skippedCount)/totalSessions)*100).toFixed(0)}%)` : ''}</div>
             </div>
             <div>
               <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{skippedCount}</div>
