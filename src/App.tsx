@@ -1796,6 +1796,7 @@ function App() {
                             onAddFixedCommitment={handleAddFixedCommitment}
                             onSkipMissedSession={handleSkipMissedSession}
                 onRedistributeMissedSessions={handleRedistributeMissedSessions}
+                onEnhancedRedistribution={handleEnhancedRedistribution}
                         />
                     )}
 
